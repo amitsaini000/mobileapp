@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "screen",
+    "description": "This project is really great.",
+    "slug": "screen",
+    "privacy": "public",
+    "sdkVersion": "28.0.0",
+    "platforms": ["ios", "android"],
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/avatar.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+       
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.amitsaini.expoproj"
+    },
+    "android": {
+      "googleServicesFile": "google-services.json",
+      "package": "com.amitsaini.expoproj"
+    }
+  }
+}

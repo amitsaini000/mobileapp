@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "1085496847490",
+    "firebase_url": "https://test-8b5fa.firebaseio.com",
+    "project_id": "test-8b5fa",
+    "storage_bucket": "test-8b5fa.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1085496847490:android:84abdb555bfbefd0",
+        "android_client_info": {
+          "package_name": "com.amitsaini.expoproj"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1085496847490-sfc44hggqadovhpdv9oqttqaergdimn1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQFk9VoA4WREKnBteQzGfHa9znU1tily8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
