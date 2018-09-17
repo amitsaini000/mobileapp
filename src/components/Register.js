@@ -443,7 +443,7 @@ class RegisterComponent extends Component {
             onPress={this.handleSubmit}
             // onPress={signInWithGoogleAsync.bind(this)}
 
-            underlayColor="#99d9f4"
+            //underlayColor="#99d9f4"
           >
           {this.state.loading ? <ActivityIndicator  animating={true} size="large" color="#0000ff" />
                               :<Text style={{color: 'white', fontSize: 18}}>Signup  </Text>}

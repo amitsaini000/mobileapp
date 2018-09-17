@@ -1,9 +1,110 @@
-import { db } from "../db/config";
-import Expo from "expo";
-import t from "tcomb-form-native"; // 0.6.11
+import { db,firebase } from "../db/config";
 
+export const sendMessageTemplate =
+ [
+  {"name": "Rex", "age": 30},
+  {"name": "Mary", "age": 25},
+  {"name": "John", "age": 41},
+  {"name": "Jim", "age": 22},
+  {"name": "Susan", "age": 52},
+  {"name": "Brent", "age": 33},
+  {"name": "Alex", "age": 16},
+  {"name": "Ian", "age": 20},
+  {"name": "Phil", "age": 24},
+];
 
+export  async function handleRightElementPress(label,uid,blockuid) {
+  console.log("block user",label);
+  console.log("block useruid",uid);
+  console.log("block userblo",blockuid);
+  if(label.index ==0  &&  label.result == "itemSelected" ){
+    blockUser(uid,blockuid);
+  }
+  if(label.index == 1  &&  label.result == "itemSelected" ){
+    unBlockUser(uid,blockuid);
+  }
 
+}
+async function unBlockUser(uid,unblockuid) { 
+  let user =await getUserInfo(uid);
+  let blockusers =[];
+  if(user.blockuser){
+    blockusers = deleteFromArray(user.blockuser,unblockuid);
+    console.log(blockusers);
+    db.collection("users").doc(uid).update({blockuser:blockusers}).then(function() {        
+      return ({success:"Document successfully updated!"});
+    }).catch(function(error) {
+      return ({error:"Error getting documents"}); 
+    });
+  }
+
+}
+export async function deleteFiled(uid,num,field){
+  console.log(uid,num);
+  console.log("index ,",field);
+  switch(field) { 
+   case "mobile1": { 
+       db.collection("users").doc(uid).update({
+        mobile1: firebase.firestore.FieldValue.delete()
+      });
+      break; 
+   } 
+   case "mobile2": { 
+    db.collection("users").doc(uid).update({
+        mobile2: firebase.firestore.FieldValue.delete()
+      }); 
+      break; 
+   }
+   case "vehicle1": { 
+     db.collection("users").doc(uid).update({
+      vehicle1: firebase.firestore.FieldValue.delete()
+      });
+      deleteVehicle(num) 
+      break; 
+   }
+   case "vehicle2": { 
+      db.collection("users").doc(uid).update({
+      vehicle2: firebase.firestore.FieldValue.delete()
+      });
+      deleteVehicle(num);
+      break; 
+   }
+   default: { 
+      //statements; 
+      break; 
+   }  
+  
+  
+  }
+}
+function deleteFromArray(array,element){ 
+  filtered = array.filter(function(value, index, arr){
+    return value != element;
+  });
+  return filtered;
+}
+export function findFromArray(array,element){ 
+  //console.log("find from arrat",array)
+  filtered = array.filter(function(value, index){
+    return value == element;
+  });
+  return filtered;
+}
+ async function blockUser(uid,blockuid) {
+ 
+  let user =await getUserInfo(uid);
+  let blockusers =[];
+  if(user.blockuser){
+    blockusers = user.blockuser;
+  }
+  blockusers.push(blockuid);
+  db.collection("users").doc(uid).update({blockuser:blockusers}).then(function() {        
+    return ({success:"Document successfully updated!"});
+  }).catch(function(error) {
+    return ({error:"Error getting documents"}); 
+  });
+
+}
 export async function UpdateVehicle(uid,message) {
   var statusMessage = vechileDetails ={};
   var vehicleData = {
@@ -207,7 +308,9 @@ export function getUserChat(uid, senderuid, cb) {
       
        msg.sort(sortByProperty('createdAt'));
        //console.log(" sort=> ", msg);
-       cb(msg);
+       if(cb){
+         cb(msg);
+        }
     })
     .catch(function(error) {
       console.log("Error getting documents: ", error);
@@ -295,7 +398,6 @@ export async function getUserInfo(uid) {
     .collection("users")
     .doc(uid)
     .get();
-  console.log("user info object::");
   return dataSnapShot.data();
 }
 
@@ -357,6 +459,62 @@ function sortByProperty(property) {
 
 /*
 
+<Toolbar
+        leftElement="menu"
+        centerElement="Searchable"
+        searchable={{
+          autoFocus: true,
+          placeholder: 'Search',
+        }}
+        rightElement={{
+            menu: {
+                icon: "more-vert",
+                labels: ["item 1", "item 2"]
+            }
+        }}
+        onRightElementPress={ (label) => { console.log(label) }}
+      />
+<MenuContext style={{padding:5,right: -70}}>
+        <Menu onSelect={value => alert(`Selected number: ${value}`)}
+          //renderer={Renderers.SlideInMenu}
+          style={{width:100}}
+        >
+          <MenuTrigger text={<Icon name="ios-menu"  />}  />
+          <MenuOptions customStyles={optionsStyles}>
+            <MenuOption value={1} >
+            <Text style={{color: 'red'}}>Two</Text>
+            </MenuOption>
+            <MenuOption value={2}>
+              <Text style={{color: 'red'}}>Two</Text>
+            </MenuOption>
+            <MenuOption value={3} disabled={true} text='Three' />
+          </MenuOptions>
+        </Menu>
+        </MenuContext>
+<Picker
+           selectedValue={this.state.language}
+            style={{
+              height: 50,
+              //color: "#ffffff",
+              width: 300,
+              //borderBottomWidth: 1,
+              borderStyle:"solid",
+              color:"red",
+              borderBottomColor:"green",
+              borderColor:"white",
+              borderRightColor:"grey"
+            }}
+            onValueChange={(itemValue, itemIndex) =>
+              this.setState({ language: itemValue })
+            }
+            
+          >
+            <Picker.Item label="Please Select The Message" value="" />
+            <Picker.Item label="JavaScript" value="js" />
+            <Picker.Item label="C" value="c" />
+            <Picker.Item label="C++" value="c++" />
+            <Picker.Item label="Java" value="Java" />
+          </Picker>
 
 const list = [
   {

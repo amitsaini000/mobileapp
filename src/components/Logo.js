@@ -8,7 +8,7 @@ export default class Logo extends Component {
     return (
       <View style={styles.container}>
         <Image source={logoImg} style={styles.image} />
-        <Text style={styles.text}>REACT NATIVE Example</Text>
+        <Text style={styles.text}>Powred by ABC</Text>
       </View>
     );
   }
@@ -16,18 +16,25 @@ export default class Logo extends Component {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    //flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    //justifyContent: 'center',
+    flexDirection: 'row',
+    marginLeft: 10,
   },
   image: {
-    width: 80,
-    height: 80,
+    width: 40,
+    height: 40,
   },
   text: {
     color: 'white',
     fontWeight: 'bold',
     backgroundColor: 'transparent',
-    marginTop: 10,
+    fontSize: 10,
+    top:30,
+    marginLeft:-50,
+    paddingLeft: -50,
+    
+    
   },
 });

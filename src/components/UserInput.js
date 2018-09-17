@@ -45,7 +45,7 @@ handleClick(){
           autoCapitalize={this.props.autoCapitalize}
           returnKeyType={this.props.returnKeyType}
           placeholderTextColor="white"
-          underlineColorAndroid="transparent"
+         // underlineColorAndroid="transparent"
           keyboardType = {this.props.keyboardType} 
           
           onChangeText ={this.props.validate}

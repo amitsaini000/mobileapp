@@ -17,15 +17,17 @@ import {
   ActivityIndicator,
   Picker
 } from "react-native";
-import { getUserInfo, getReceiverInfo, saveSendMsg, sendMsg } from "./data";
+import {  Icon }   from 'native-base'
+import { getUserInfo, getReceiverInfo, saveSendMsg, sendMsg,sendMessageTemplate,findFromArray } from "./data";
 import { Home, Login } from "../screens/screen";
 import HeaderComponent from "./HeaderComponent";
+
 import { db } from "../db/config";
 import { getUserStatus } from "../db/dbutil";
 import { Expo, Notifications } from "expo";
 import t from "tcomb-form-native"; // 0.6.11
 import DropdownAlert from "react-native-dropdownalert";
-
+import ModalDropdown from 'react-native-modal-dropdown';
 //  const db = firebase.firestore();
 const Form = t.form.Form;
 const backgroundColor = "#0067a7";
@@ -63,16 +65,14 @@ const formStyles = {
       color: "white",
       fontSize: 17,
       height: 40,
-      //padding: 15,
-      // borderRadius: 4,
-      borderColor: "white", // <= relevant style here
-      //borderWidth: 1,
-      marginBottom: 8,
+      borderColor: 'white', // <= relevant style here
+      //marginBottom: 8,
       width: 300,
-      borderBottomWidth: 1,
+      //borderBottomWidth: 0,
       fontWeight: "bold",
-      borderColor:'transparent'
-      //underlineColorAndroid: 'white',
+      
+      borderWidth: 0,
+      
       
     },
 
@@ -88,7 +88,8 @@ const formStyles = {
       marginBottom: 8,
       width: 300,
       borderBottomWidth: 1,
-      fontWeight: "bold"
+      fontWeight: "bold",
+      borderBottomColor: 'red'
     }
   }
 };
@@ -101,17 +102,125 @@ const options = {
   fields: {
     vehicleField: {
       placeholder: "Mobile",
-      auto: "none",
-      
+      underlineColorAndroid:'rgba(0,0,0,0)',
+      auto: "none",      
       returnKeyType: "send",
       //onSubmit : () => {this.temp},
       autoCorrect: false,
-      underlineColorAndroid: 'transparent',
+      borderColor: 'transparent',
+      config: { icon: 'info' }
+     // underlineColorAndroid: 'transparent',
+      
+      //underlayColor:"white"
     }
   }
 };
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  row: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  cell: {
+    flex: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    height: 500,
+    paddingVertical: 100,
+    paddingLeft: 20,
+  },
+  textButton: {
+    color: 'deepskyblue',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'deepskyblue',
+    margin: 2,
+  },
+
+  
+  dropdown_2: {
+    width: 300,
+    marginTop: 7,
+    borderBottomWidth:1,
+    borderColor:"white"
+  },
+  dropdown_2_text: {
+    //marginVertical: 10,
+    marginHorizontal: 6,
+    fontSize: 18,
+    color: 'white',
+    textAlign: 'left',
+    //textAlignVertical: 'center',
+  },
+  dropdown_2_dropdown: {
+    width: "90%",
+    height: "70%",
+    borderColor: 'cornflowerblue',
+    borderWidth: 2,
+    borderRadius: 3,
+  },
+  dropdown_2_row: {
+    flexDirection: 'row',
+    height: 40,
+    //alignItems: 'center',
+  },
+  dropdown_2_image: {
+    marginLeft: 4,
+    width: 30,
+    height: 30,
+  },
+  dropdown_2_row_text: {
+    marginHorizontal: 4,
+    fontSize: 16,
+    color: 'navy',
+    textAlignVertical: 'center',
+  },
+  dropdown_2_separator: {
+    height: 1,
+    backgroundColor: 'cornflowerblue',
+  },
+ 
+});
+
 export default class HomeComponent extends Component {
+  _dropdown_2_renderButtonText(rowData) {
+    console.log("rowdata:" ,rowData)
+    const {name} = rowData;
+    this.setState({ language: name });
+    return `${name}`;
+  }
+  
+  _dropdown_2_renderRow(rowData, rowID, highlighted) {
+    let icon =require('../../assets/avatar.png');
+    let evenRow = rowID % 2;
+    return (
+      <TouchableHighlight underlayColor='cornflowerblue'>
+        <View style={[styles.dropdown_2_row, {backgroundColor: evenRow ? 'lemonchiffon' : 'white'}]}>
+          <Image style={styles.dropdown_2_image}
+                 mode='stretch'
+                 source={icon}
+          />
+          <Text style={[styles.dropdown_2_row_text, highlighted && {color: 'mediumaquamarine'}]}>
+            {`${rowData.name}`}
+          </Text>
+        </View>
+      </TouchableHighlight>
+    );
+  }
+  
+  _dropdown_2_renderSeparator(sectionID, rowID, adjacentRowHighlighted) {
+    if (rowID == sendMessageTemplate.length - 1) return;
+    let key = `spr_${rowID}`;
+    return (<View style={styles.dropdown_2_separator}
+                  key={key}
+    />);
+  }
   temp = ()=>{
     console.log("temp")
   }
@@ -203,6 +312,7 @@ export default class HomeComponent extends Component {
       this.setState({ uid: user.uid });
       const useerInfo = await getUserInfo(user.uid);
       this.setState({ title: useerInfo.name });
+      
     } else {
       const { navigate } = this.props.navigation;
       navigate(Login);
@@ -221,7 +331,20 @@ export default class HomeComponent extends Component {
           return;
         }
         const uid = this.state.uid;
-        console.log("vehicle:::::::", vehicleData);
+        //console.log("vehicle:::::::", vehicleData);
+
+        let getBlockUser = await getUserInfo(vehicleData.uid);
+        //console.log("getBlockUser:::::::", getBlockUser);
+        if(getBlockUser.blockuser && getBlockUser.blockuser.length >0){
+
+          isUserBlock = findFromArray(getBlockUser.blockuser,uid);
+          //console.log("isUserBlock:::::::", isUserBlock);
+        
+          if(isUserBlock && isUserBlock.length >0){
+            this.onError(`You are blocked by ${parseVehicleField} User You can't send the message`);
+            return;
+          }
+        }
         
         saveSendMsg({
           senderUid: uid,
@@ -242,16 +365,19 @@ export default class HomeComponent extends Component {
   };
 
   static navigationOptions = ({ navigation }) => {
-    let drawerLabel = "Send Message";
+    let drawerLabel = "Chat";
     let drawerIcon = () => (
       <Image
-        source={require("../../assets/home-icon.png")}
-        style={{ width: 26, height: 26, tintColor: backgroundColor }}
-      />
+      style={{width:30,height:30}}
+      source={require('../../assets/newmsg.png')} />
     );
+   
     return { drawerLabel, drawerIcon };
   };
+  
+
   render() {
+    
     return (
       <View
         style={{
@@ -281,33 +407,21 @@ export default class HomeComponent extends Component {
             
             
           />
-          <Picker
-           selectedValue={this.state.language}
-            style={{
-              height: 50,
-              //color: "#ffffff",
-              width: 300,
-              //borderBottomWidth: 1,
-              borderStyle:"solid",
-              color:"red",
-              borderBottomColor:"green",
-              borderColor:"white",
-              borderRightColor:"grey"
-            }}
-            onValueChange={(itemValue, itemIndex) =>
-              this.setState({ language: itemValue })
-            }
-            
-          >
-            <Picker.Item label="Please Select The Message" value="" />
-            <Picker.Item label="JavaScript" value="js" />
-            <Picker.Item label="C" value="c" />
-            <Picker.Item label="C++" value="c++" />
-            <Picker.Item label="Java" value="Java" />
-          </Picker>
+         <ModalDropdown ref="dropdown_2"
+                style={styles.dropdown_2}
+                textStyle={styles.dropdown_2_text}
+                dropdownStyle={styles.dropdown_2_dropdown}
+                options={sendMessageTemplate}
+                defaultValue={"Please Select The Message"}
+                renderButtonText={(rowData) => this._dropdown_2_renderButtonText(rowData)}
+                renderRow={this._dropdown_2_renderRow.bind(this)}
+                renderSeparator={(sectionID, rowID, adjacentRowHighlighted) => this._dropdown_2_renderSeparator(sectionID, rowID, adjacentRowHighlighted)}
+                
+            />
+          
           <TouchableHighlight
             style={{
-              margin: 2,
+              marginTop: 10,
               width: 200,
               height: 45,
               backgroundColor: "darkviolet",

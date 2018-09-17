@@ -19,7 +19,7 @@ import UserProfileComponent from './src/components/UserInfo';
 import HeaderComponent from './src/components/HeaderComponent';
 import LogoutComponent from './src/components/LogoutComponent';
 import {getUserStatus} from './src/db/dbutil';
-
+import Logo from "./src/components/Logo";
 
 //Screen names
 //import { Home, Login, Register, Profile,UserNotification,NotificationHome } from './src/screens/screen';
@@ -79,16 +79,16 @@ const LoginStack = createStackNavigator(
     //headerMode: 'none',
        
     /* The header config from HomeScreen is now here */
-    /*navigationOptions: {
-      headerTitle:<HeaderComponent/>,
+    navigationOptions: {
+      headerTitle:<Logo/>,
       headerStyle: {
-        backgroundColor: 'blue',
+        //backgroundColor: 'blue',
       },
-      headerTintColor: '#fff',
+      //headerTintColor: '#fff',
       headerTitleStyle: {
-        fontWeight: 'bold',
+        //fontWeight: 'bold',
       },
-    }*/
+    }
   });
   
   const ProfileTabs = createMaterialTopTabNavigator ({
@@ -96,7 +96,22 @@ const LoginStack = createStackNavigator(
     Signup: { screen: RegisterComponent },
     //Logout: { screen: LogoutComponent},
     Profile:{ screen: UserProfileComponent}
-  }, {
+  },{
+      tabBarOptions: {
+      labelStyle: {
+        fontSize: 15,
+        marginTop:30
+      },
+      tabStyle: {
+        width: 100,
+      },
+      style: {
+        height:80,
+        
+      },
+    }
+  },
+   {
     order: ["Profile",'Login', 'Signup'],    
     swipeEnabled: true,
     shifting: true,
@@ -107,13 +122,13 @@ const MyApp = createDrawerNavigator({
 
   // For each screen that you can navigate to, create a new entry like this:
   SendMessages: {
-        screen: HomeComponent,
+        screen: HomeComponent
     },
     Logout: {
         screen: LogoutComponent,
         navigationOptions: {
           drawerLabel :"Logout", 
-          drawerIcon :<Image  source={require("./assets/username.png")} style={{ width: 26, height: 26 }} />
+          drawerIcon :<Icon  name="log-out" />
       } 
     },
     // Register: {
@@ -153,7 +168,7 @@ const MyApp = createDrawerNavigator({
     contentOptions: {
         activeTintColor: 'red',
     },    
-    order: ["SendMessages","Profile","ReceivedMessages","Logout"]
+    order: ["SendMessages","ReceivedMessages","Profile","Logout"]
   });
 
 

@@ -163,7 +163,7 @@ const value = {
             //onPress={this.handleSubmit}
             // onPress={signInWithGoogleAsync.bind(this)}
 
-            underlayColor="#99d9f4"
+            //underlayColor="#99d9f4"
           >
             <Text style={styles.buttonText}>Update</Text>
           </TouchableHighlight>

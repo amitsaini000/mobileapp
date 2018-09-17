@@ -175,7 +175,7 @@ export default class LoginCompenent extends Component {
   return (<TouchableHighlight
         style={styles1.buttonStyle}
         onPress={this.state.loading  ? {} : this.login.bind(this)}
-        underlayColor="#99d9f4"
+        //underlayColor="#99d9f4"
       >
       
       {
@@ -212,6 +212,7 @@ export default class LoginCompenent extends Component {
                 />
     })
   }
+  
   render() {
     return (
       <View
@@ -245,7 +246,7 @@ export default class LoginCompenent extends Component {
                 navigate("Signup");                                             
             }}
 
-              underlayColor="#99d9f4"
+              //underlayColor="#99d9f4"
             >
              <Text style={styles.buttonText}>Signup</Text>
             </TouchableHighlight>

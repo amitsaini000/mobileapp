@@ -12,25 +12,44 @@ import {
   TouchableHighlight,
   Picker,
   BackHandler,
-  DeviceEventEmitter 
+  DeviceEventEmitter,
+  ToolbarAndroid
+  
 } from "react-native";
-
+import { Icon, Right } from 'native-base'
 import { GiftedChat, InputToolbar } from "react-native-gifted-chat";
-import { getUserChat, saveSendMsg, sendMsg, updateReceivedMsg } from "./data";
+import { getUserChat, saveSendMsg, sendMsg, updateReceivedMsg,handleRightElementPress } from "./data";
 import NavBar from "./NavBar";
 import CustomView from "./CustomView";
 import { getUserStatus } from "../db/dbutil";
 import HeaderComponent from "./HeaderComponent";
-
+import ModalDropdown from 'react-native-modal-dropdown';
+import { Toolbar } from 'react-native-material-ui';
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  sendButtonContainer: { color: "red" }
-});
+  sendButtonContainer: { color: "red" },
+  menu_text: {
+    marginVertical: 10,
+    marginHorizontal: 6,
+    fontSize: 18,
+    //color: 'white',
+    //textAlign: 'center',
+    textAlignVertical: 'center',
+  },
 
+});
+import {
+  MenuContext,
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,Renderers 
+} from 'react-native-popup-menu';
 const filterBotMessages = message =>
   !message.system && message.user && message.user._id && message.user._id === 2;
 const findStep = step => (_, index) => index === step - 1;
 const backgroundColor = "#0067a7";
+
 export default class UserNotification extends Component {
   constructor(props) {
     super(props);
@@ -52,19 +71,39 @@ export default class UserNotification extends Component {
     this.onSend = this.onSend.bind(this);
     this.parsePatterns = this.parsePatterns.bind(this);
     this.setMsg = this.setMsg.bind(this);
+    
     this.backPressSubscriptions = new Set()
   }
+  
+  static rightElementPress = (label)=>{
+    console.log("label");
 
+  }
+  
   static navigationOptions =({navigation}) =>  {
     return{
-        headerTitle:navigation.state.params.senderInfo.name,
-        headerStyle: {
-          backgroundColor: backgroundColor,
+          headerTitle:navigation.state.params.senderInfo.name,
+          headerStyle: {
+            backgroundColor: backgroundColor,
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
         },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-      },
+        headerRight:
+        <Toolbar  style={{ container: { backgroundColor: backgroundColor } }}       
+        rightElement={{
+            menu: {
+                icon: "more-vert",
+                labels: ["Block", "Unblock"]
+            }
+        }}
+        onRightElementPress={ (label) => { 
+          //console.log(navigation.state.params);
+          handleRightElementPress(label,navigation.state.params.uid,navigation.state.params.senderInfo.senderId);
+        }}
+      />
+        
 
     }
     
@@ -77,10 +116,17 @@ export default class UserNotification extends Component {
   }
   setMsg(msg) {
     console.log("user chat received");
-    this.setState({ messages: msg, appIsReady: true });
-    if(msg.length >0){
-      this.setState({headerTitle:msg[0].user.name});
+    try {
+      
+      if(msg && msg.length >0){
+        this.setState({ messages: msg, appIsReady: true });
+        this.setState({headerTitle:msg[0].user.name});
+      }
+      
+    } catch (error) {
+      
     }
+    
     
     updateReceivedMsg(msg);
   }
@@ -90,6 +136,9 @@ export default class UserNotification extends Component {
     if (user) {
       this.setState({ uid: user.uid });
       getUserChat(user.uid, this.state.senderInfo.senderId, this.setMsg);
+      this.props.navigation.setParams({
+        uid: user.uid,
+      })
       console.log("user chat request sent");
     }
   };
@@ -289,6 +338,7 @@ export default class UserNotification extends Component {
           behavior={"padding"}
           keyboardVerticalOffset={20}
         />
+        
       </View>
     );
   }
