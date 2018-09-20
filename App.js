@@ -19,7 +19,7 @@ import UserProfileComponent from './src/components/UserInfo';
 import HeaderComponent from './src/components/HeaderComponent';
 import LogoutComponent from './src/components/LogoutComponent';
 import {getUserStatus} from './src/db/dbutil';
-import Logo from "./src/components/Logo";
+
 
 //Screen names
 //import { Home, Login, Register, Profile,UserNotification,NotificationHome } from './src/screens/screen';
@@ -79,16 +79,16 @@ const LoginStack = createStackNavigator(
     //headerMode: 'none',
        
     /* The header config from HomeScreen is now here */
-    navigationOptions: {
-      headerTitle:<Logo/>,
+    /*navigationOptions: {
+      headerTitle:<HeaderComponent/>,
       headerStyle: {
-        //backgroundColor: 'blue',
+        backgroundColor: 'blue',
       },
-      //headerTintColor: '#fff',
+      headerTintColor: '#fff',
       headerTitleStyle: {
-        //fontWeight: 'bold',
+        fontWeight: 'bold',
       },
-    }
+    }*/
   });
   
   const ProfileTabs = createMaterialTopTabNavigator ({
@@ -112,7 +112,7 @@ const LoginStack = createStackNavigator(
     }
   },
    {
-    order: ["Profile",'Login', 'Signup'],    
+    order: ["Profile",'Signup','Login'],    
     swipeEnabled: true,
     shifting: true,
     initialRouteName: 'Profile'

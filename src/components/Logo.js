@@ -7,7 +7,9 @@ export default class Logo extends Component {
   render() {
     return (
       <View style={styles.container}>
-        <Image source={logoImg} style={styles.image} />
+        <Image source={logoImg} style={styles.image} 
+          
+        />
         <Text style={styles.text}>Powred by ABC</Text>
       </View>
     );

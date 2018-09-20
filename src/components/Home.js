@@ -1,11 +1,4 @@
-/*
-        Mr Nguyen Duc Hoang
-        https://www.youtube.com/c/nguyenduchoang
-        Email: sunlight4d@gmail.com
-        HomeComponent 
 
-
-        */
 import React, { Component } from "react";
 import {
   Text,
@@ -15,7 +8,8 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   ActivityIndicator,
-  Picker
+  Picker,
+  TextInput
 } from "react-native";
 import {  Icon }   from 'native-base'
 import { getUserInfo, getReceiverInfo, saveSendMsg, sendMsg,sendMessageTemplate,findFromArray } from "./data";
@@ -28,7 +22,12 @@ import { Expo, Notifications } from "expo";
 import t from "tcomb-form-native"; // 0.6.11
 import DropdownAlert from "react-native-dropdownalert";
 import ModalDropdown from 'react-native-modal-dropdown';
-//  const db = firebase.firestore();
+import commonStyle from './style';
+import bootstrap from 'tcomb-form-native/lib/stylesheets/bootstrap.js';
+import { Body ,Content,Card } from 'native-base';
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
+import Hideo  from './Hideo';
+
 const Form = t.form.Form;
 const backgroundColor = "#0067a7";
 
@@ -36,157 +35,44 @@ const ChatForm = t.struct({
   vehicleField: t.String
   //msg: t.String
 });
-const formStyles = {
-  ...Form.stylesheet,
-  formGroup: {
-    normal: {
-      marginBottom: 10,
-      //underlineColorAndroid: 'white',
-    }
-  },
-  controlLabel: {
-    normal: {
-      color: "blue",
-      fontSize: 18,
-      marginBottom: 7,
-      fontWeight: "600"
-    },
-    // the style applied when a validation error occours
-    error: {
-      color: "red",
-      fontSize: 18,
-      marginBottom: 7,
-      fontWeight: "600"
-    }
-  },
-  textbox: {
-    // the style applied wihtout errors
-    normal: {
-      color: "white",
-      fontSize: 17,
-      height: 40,
-      borderColor: 'white', // <= relevant style here
-      //marginBottom: 8,
-      width: 300,
-      //borderBottomWidth: 0,
-      fontWeight: "bold",
-      
-      borderWidth: 0,
-      
-      
-    },
 
-    // the style applied when a validation error occours
-    error: {
-      color: "white",
-      fontSize: 17,
-      height: 40,
-      //padding: 10,
-      // borderRadius: 4,
-      borderColor: "#a94442", // <= relevant style here
-      //borderWidth: 1,
-      marginBottom: 8,
-      width: 300,
-      borderBottomWidth: 1,
-      fontWeight: "bold",
-      borderBottomColor: 'red'
-    }
-  }
-};
+
+
 
 const options = {
-  stylesheet: formStyles,
+  stylesheet: bootstrap,
   order: ["vehicleField"],
   //auto: "placeholders",
   auto: 'none',
   fields: {
     vehicleField: {
-      placeholder: "Mobile",
-      underlineColorAndroid:'rgba(0,0,0,0)',
+      placeholder: "Enter Mobile Number",
       auto: "none",      
       returnKeyType: "send",
       //onSubmit : () => {this.temp},
       autoCorrect: false,
-      borderColor: 'transparent',
-      config: { icon: 'info' }
-     // underlineColorAndroid: 'transparent',
-      
+      borderColor: 'rgba(255,255,255,0.3)',
+      config: { icon: 'info' },
+      underlineColorAndroid: 'rgba(255,255,255,0.3)',      
       //underlayColor:"white"
     }
   }
 };
+options.stylesheet.textbox.normal = {
+  color: "white",
+  //fontSize: 17,
+  //height: 40,
+  borderColor: 'white', // <= relevant style here
+  marginBottom: 8,
+  marginVertical: 10,
+  width: 300,
+ // borderBottomWidth: 1,
+  fontWeight: "bold",      
+  //borderWidth: 0,
+  backgroundColor:'rgba(255,255,255,0.3)'
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  row: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  cell: {
-    flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    height: 500,
-    paddingVertical: 100,
-    paddingLeft: 20,
-  },
-  textButton: {
-    color: 'deepskyblue',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'deepskyblue',
-    margin: 2,
-  },
 
-  
-  dropdown_2: {
-    width: 300,
-    marginTop: 7,
-    borderBottomWidth:1,
-    borderColor:"white"
-  },
-  dropdown_2_text: {
-    //marginVertical: 10,
-    marginHorizontal: 6,
-    fontSize: 18,
-    color: 'white',
-    textAlign: 'left',
-    //textAlignVertical: 'center',
-  },
-  dropdown_2_dropdown: {
-    width: "90%",
-    height: "70%",
-    borderColor: 'cornflowerblue',
-    borderWidth: 2,
-    borderRadius: 3,
-  },
-  dropdown_2_row: {
-    flexDirection: 'row',
-    height: 40,
-    //alignItems: 'center',
-  },
-  dropdown_2_image: {
-    marginLeft: 4,
-    width: 30,
-    height: 30,
-  },
-  dropdown_2_row_text: {
-    marginHorizontal: 4,
-    fontSize: 16,
-    color: 'navy',
-    textAlignVertical: 'center',
-  },
-  dropdown_2_separator: {
-    height: 1,
-    backgroundColor: 'cornflowerblue',
-  },
- 
-});
 
 export default class HomeComponent extends Component {
   _dropdown_2_renderButtonText(rowData) {
@@ -201,12 +87,12 @@ export default class HomeComponent extends Component {
     let evenRow = rowID % 2;
     return (
       <TouchableHighlight underlayColor='cornflowerblue'>
-        <View style={[styles.dropdown_2_row, {backgroundColor: evenRow ? 'lemonchiffon' : 'white'}]}>
-          <Image style={styles.dropdown_2_image}
+        <View style={[commonStyle.dropdown_2_row, {backgroundColor: evenRow ? 'lemonchiffon' : 'white'}]}>
+          <Image style={commonStyle.dropdown_2_image}
                  mode='stretch'
                  source={icon}
           />
-          <Text style={[styles.dropdown_2_row_text, highlighted && {color: 'mediumaquamarine'}]}>
+          <Text style={[commonStyle.dropdown_2_row_text, highlighted && {color: 'mediumaquamarine'}]}>
             {`${rowData.name}`}
           </Text>
         </View>
@@ -217,13 +103,11 @@ export default class HomeComponent extends Component {
   _dropdown_2_renderSeparator(sectionID, rowID, adjacentRowHighlighted) {
     if (rowID == sendMessageTemplate.length - 1) return;
     let key = `spr_${rowID}`;
-    return (<View style={styles.dropdown_2_separator}
+    return (<View style={commonStyle.dropdown_2_separator}
                   key={key}
     />);
   }
-  temp = ()=>{
-    console.log("temp")
-  }
+  
   constructor(props) {
     super(props);
   
@@ -256,9 +140,7 @@ export default class HomeComponent extends Component {
   };
   // ...
   onClose(data) {
-    // data = {type, title, message, action}
-    // action means how the alert was closed.
-    // returns: automatic, programmatic, tap, pan or cancel
+    
   }
   showLoader() {
     if (this.state.sentMsg) {
@@ -295,9 +177,15 @@ export default class HomeComponent extends Component {
         data.senderInfo
       )}`
     );
-    console.log("Push notification", data.senderInfo);
+    //console.log("Push notification Home.js", data.senderInfo);
     const { navigate } = this.props.navigation;
-    navigate("UserNotification", { senderInfo: data.senderInfo });
+    const sendData = {
+      senderId:data.senderInfo.senderId,
+      receverId:data.senderInfo.receverId,
+      name:data.senderInfo.name
+    }
+    console.log("handleNotification notification Home.js", sendData);
+    navigate("UserNotification", { senderInfo: sendData });
   };
   componentWillUnmount() {
     this.subscription && this.subscription.remove();
@@ -331,14 +219,10 @@ export default class HomeComponent extends Component {
           return;
         }
         const uid = this.state.uid;
-        //console.log("vehicle:::::::", vehicleData);
-
         let getBlockUser = await getUserInfo(vehicleData.uid);
-        //console.log("getBlockUser:::::::", getBlockUser);
         if(getBlockUser.blockuser && getBlockUser.blockuser.length >0){
 
           isUserBlock = findFromArray(getBlockUser.blockuser,uid);
-          //console.log("isUserBlock:::::::", isUserBlock);
         
           if(isUserBlock && isUserBlock.length >0){
             this.onError(`You are blocked by ${parseVehicleField} User You can't send the message`);
@@ -392,33 +276,61 @@ export default class HomeComponent extends Component {
             flex: 1,
             //backgroundColor: backgroundColor,
             alignItems: "center",
-            justifyContent: "center",
-            marginTop: -200
+            justifyContent: "flex-start",
+             marginTop: 50
             //flexDirection: 'row'
           }}
         >
-          <Form
-            ref={c => (this._form = c)}
-            type={ChatForm}
-            options={options}
-            value={this.state.formValue}
-            padding={35}
-            onChange={formValue => this.setState({ formValue })}
+         
+          <Hideo
+            iconClass={FontAwesomeIcon}
+            iconName={'envelope'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'}
+            inputStyle={{ color: '#464949',borderWidth:2}}
+            placeholder = "Enter Mobile Number"
             
+            onChangeText={(text) => this.setState({input: text})}
             
           />
+          <Text>{'user input: ' + this.state.input}</Text>
+          <Hideo
+            iconClass={FontAwesomeIcon}
+            iconName={'envelope'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'}
+            inputStyle={{ color: '#464949',borderWidth:2}}
+            placeholder = "Enter Mobile Number werw"
+            errorStyle={(true) ? {borderColor:"red"} : "null"}
+            errorMessage={(true) ? "Please asdasd  d" : "sssdf sf"}
+            
+          />
+          <Hideo
+            iconClass={FontAwesomeIcon}
+            iconName={'envelope'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'}
+            inputStyle={{ color: '#464949',borderWidth:2}}
+            placeholder = "Enter Mobile Number asda"
+            errorStyle={(true) ? {borderColor:"red"} : "null"}
+            errorMessage={(true) ? "Please asdasd  d" : "sssdf sf"}
+            
+          />
+         
          <ModalDropdown ref="dropdown_2"
-                style={styles.dropdown_2}
-                textStyle={styles.dropdown_2_text}
-                dropdownStyle={styles.dropdown_2_dropdown}
+                style={commonStyle.dropdown_2}
+                textStyle={commonStyle.dropdown_2_text}
+                dropdownStyle={commonStyle.dropdown_2_dropdown}
                 options={sendMessageTemplate}
                 defaultValue={"Please Select The Message"}
                 renderButtonText={(rowData) => this._dropdown_2_renderButtonText(rowData)}
                 renderRow={this._dropdown_2_renderRow.bind(this)}
                 renderSeparator={(sectionID, rowID, adjacentRowHighlighted) => this._dropdown_2_renderSeparator(sectionID, rowID, adjacentRowHighlighted)}
                 
-            />
-          
+          />
           <TouchableHighlight
             style={{
               marginTop: 10,

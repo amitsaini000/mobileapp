@@ -5,44 +5,46 @@ export const IMAGE_HEIGHT = window.width / 4;
 export const IMAGE_HEIGHT_SMALL = window.width /7;
 
 export default StyleSheet.create({
-  container: {
-    backgroundColor: '#4c69a5',
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop:25
+  dropdown_2: {
+    width: "90%",
+    marginTop: 7,
+    borderBottomWidth:1,
+    borderColor:"white"
   },
-  input: {
-    height: 50,
-    //backgroundColor: '#fff',
-    marginHorizontal: 10,
-    marginVertical: 5,
-   // paddingVertical: 5,
-    // paddingHorizontal: 15,
-    width: window.width - 30,
+  dropdown_2_text: {
+    //marginVertical: 10,
+    marginHorizontal: 6,
+    fontSize: 18,
+    color: 'white',
+    textAlign: 'left',
+    //textAlignVertical: 'center',
   },
-  logo: {
-    height: IMAGE_HEIGHT,
-    resizeMode: 'contain',
-    marginBottom: 10,
-    padding:10,
-    marginTop:10
+  dropdown_2_dropdown: {
+    width: "90%",
+    //height: "70%",
+    borderColor: 'cornflowerblue',
+    borderWidth: 2,
+    borderRadius: 3,
   },
-  register:{
-    marginBottom:20, 
-    width:window.width -100,
-    alignItems:'center',
-    justifyContent:'center',
-    height:50,
-    backgroundColor: '#ffae',
+  dropdown_2_row: {
+    flexDirection: 'row',
+    height: 40,
+    //alignItems: 'center',
   },
-  marginBottom:
-  {
-      marginBottom: 20,
+  dropdown_2_image: {
+    marginLeft: 4,
+    width: 30,
+    height: 30,
   },
-  marginTop:{
-    marginTop:20
+  dropdown_2_row_text: {
+    marginHorizontal: 4,
+    fontSize: 16,
+    color: 'navy',
+    textAlignVertical: 'center',
   },
-},
+  dropdown_2_separator: {
+    height: 1,
+    backgroundColor: 'cornflowerblue',
+  }, 
 
-);
+});

@@ -13,6 +13,14 @@ export const sendMessageTemplate =
   {"name": "Phil", "age": 24},
 ];
 
+export const replayMessageTemplate =
+ [
+  
+  {"name": "Alex", "age": 16},
+  {"name": "Ian", "age": 20},
+  {"name": "Phil", "age": 24},
+];
+
 export  async function handleRightElementPress(label,uid,blockuid) {
   console.log("block user",label);
   console.log("block useruid",uid);
@@ -112,7 +120,7 @@ export async function UpdateVehicle(uid,message) {
    
    }
    if(message.vehicle2){
-    vehicleData. vehicle2 = message.vehicle2;
+    vehicleData.vehicle2 = message.vehicle2;
    }
   console.log("UpdateVehicle",message);
    
@@ -204,16 +212,13 @@ export async function UpdateEmergencyNumber(uid,message) {
   return statusMessage;
 
 }
+
 export async function UpdateUserNameVehicle(uid,message) {
   var statusMessage ={} 
   console.log("UpdateUserNameVehicle",message);
   
-  if(message.oldName !== message.name){
-    statusMessage =  await db.collection("users").doc(uid).update({name:message.name}).then(function() {
-        return ({success:"Document successfully updated!"});      
-    }).catch(function(error) {
-      return ({error:"Error getting documents"}); 
-    });
+  if(message.oldName !== message.name){    
+    statusMessage =  await  updateName(uid,message.name)
    }
    if(message.oldVehicle !== message.vehicle ){
       let  vechileDetails = {}; 
@@ -230,31 +235,41 @@ export async function UpdateUserNameVehicle(uid,message) {
             uid:uid,
             token:message.token
           };
-      
-          let waitForStatus =  await db.collection("vehicle").doc(message.vehicle.replace(/[\. ,:-]+/g, ""))
-          .set(vechileDetails).then(function() {
-          console.log("Vehicle successfully updated!");
-          return db.collection("vehicle").doc(message.oldVehicle).delete().then(function() {
-                console.log("Document successfully deleted!");
-                //if(message.oldName !== message.name)
-                {
-                  statusMessage =  db.collection("users").doc(uid).update({vehicle:message.vehicle}).then(function() {
-                      return ({success:"Document successfully updated!"});      
-                  }).catch(function(error) {
-                    return ({error:"Error getting documents"}); 
-                  });
-                 }
-                return statusMessage;//({success:"Document successfully updated!"});   
-            }).catch(function(error) {
-                console.error("Error removing document: ", error);
-            }); 
+          var batch = db.batch();
+          batchUpdate(batch,"vehicle",message.vehicle.replace(/[\. ,:-]+/g, ""),vechileDetails,"set");
+          batchUpdate(batch,"vehicle",message.oldVehicle,{},"delete");
+
+          let waitForStatus = await batch.commit().then(function () {
+            return ({success:"Document successfully updated!"});  
           }).catch(function(error) {
-            console.log("Error getting documents: ", error);
+            console.log("batch Error getting documents: ", error);
             return ({error:"Error getting documents"});
           });
-
-          console.log("waitForStatus::",waitForStatus);
           return waitForStatus;
+          // let waitForStatus =  await db.collection("vehicle").doc(message.vehicle.replace(/[\. ,:-]+/g, ""))
+          // .set(vechileDetails).then(function() {
+          // console.log("Vehicle successfully updated!");
+          // return db.collection("vehicle").doc(message.oldVehicle).delete().then(function() {
+          //       console.log("Document successfully deleted!");
+          //       //if(message.oldName !== message.name)
+          //       {
+          //         statusMessage =  db.collection("users").doc(uid).update({vehicle:message.vehicle}).then(function() {
+          //             return ({success:"Document successfully updated!"});      
+          //         }).catch(function(error) {
+          //           return ({error:"Error getting documents"}); 
+          //         });
+          //        }
+          //       return statusMessage;//({success:"Document successfully updated!"});   
+          //   }).catch(function(error) {
+          //       console.error("Error removing document: ", error);
+          //   }); 
+          // }).catch(function(error) {
+          //   console.log("Error getting documents: ", error);
+          //   return ({error:"Error getting documents"});
+          // });
+
+          //console.log("waitForStatus::",waitForStatus);
+          //return waitForStatus;
         
       }
       else{
@@ -265,6 +280,7 @@ export async function UpdateUserNameVehicle(uid,message) {
 
 }
 export function updateReceivedMsg(message){
+  //todo impelent batch update here
   console.log("updateReceivedMsg",message);
   for(var i=0;i<message.length;i++){
     if(message[i].cloudReceived != true) {
@@ -309,6 +325,7 @@ export function getUserChat(uid, senderuid, cb) {
        msg.sort(sortByProperty('createdAt'));
        //console.log(" sort=> ", msg);
        if(cb){
+        console.log(" getUserChat=> ", cb);
          cb(msg);
         }
     })
@@ -333,7 +350,7 @@ export function getAllChats(uid, cb) {
           var count = 0;
 
           console.log(doc.id, " inside if=> ", doc.data().user.name);
-          (data.name = doc.data().user.name),
+            (data.name = doc.data().user.name),
             (data.token = doc.data().token),
             (data.senderId = doc.data().user._id),
             (data.avatar_url =
@@ -403,11 +420,14 @@ export async function getUserInfo(uid) {
 
 export function sendMsg(token, title, body,dataObj) {
   console.log(token + "-sendMsg--" + title + "----" + body);
+  dataObj.name = title;
+  console.log("dataObj notification:",dataObj)
   return fetch("https://exp.host/--/api/v2/push/send", {
     body: JSON.stringify({
       to: token,
       title: title,
       body: body,
+      badge: 4,
      // data: { message: `${title} - ${body} -  ${dataObj}` }
      data: { senderInfo: dataObj } 
     }),
@@ -417,6 +437,7 @@ export function sendMsg(token, title, body,dataObj) {
     method: "POST"
   });
 }
+
 
 export function saveSendMsg(senderObj) {
   console.log("saveSendMsg sender:::", senderObj);
@@ -456,7 +477,76 @@ function sortByProperty(property) {
 
 };
 
+export async function getDbDoc(dbname,docid) {
+  var dataSnapShot = await 
+    db
+    .collection(dbname)
+    .doc(docid)
+    .get();
+  console.log("getDbDoc info object::", dataSnapShot.data());
+  return dataSnapShot.data();  
+}
 
+async function getDocID(dbname,uid) {
+  var msg = [];
+  
+   var docids  = await db.collection(dbname)
+    .where(uid, "==", true)
+    .get()
+    .then(function(querySnapshot) {
+      querySnapshot.forEach(function(doc) {
+        {
+          msg.push(doc.id);
+        }       
+      });      
+      return(msg);      
+    })
+    .catch(function(error) {
+      console.log("Error getting documents: ", error);
+    });
+    return docids;
+}
+
+function batchUpdate(batch,dbName,docId,prop,cmd){
+  var dbref =db.collection(dbName).doc(docId);
+  if(cmd && cmd == "delete"){
+    batch[cmd](dbref);
+  }
+  else{
+    batch[cmd](dbref,prop);
+  }  
+     
+}
+async function updateName(uid,newName){  
+    
+  var batch = db.batch();
+  var status ={}
+  batchUpdate(batch,"users",uid,{name:newName},"update");
+
+  var NotificationDocids =  await getDocID("Notification",uid);
+  const map1 = NotificationDocids.map(x => db.collection("Notification").doc(x));  
+  const map2 = map1.map(x =>  batch.update(x, { 'user.name': newName }));
+
+  const userData = await getUserInfo(uid);
+   if(userData.vehicle){     
+     batchUpdate(batch,"vehicle",userData.vehicle,{name:newName},"update");
+   }
+   if(userData.vehicle1){     
+    batchUpdate(batch,"vehicle",userData.vehicle1,{name:newName},"update");    
+   }
+   if(userData.vehicle2){     
+    batchUpdate(batch,"vehicle",userData.vehicle2,{name:newName},"update");    
+   }
+
+   status = await batch.commit().then(function () {
+    return ({success:"Document successfully updated!"});  
+  }).catch(function(error) {
+    console.log("Error getting documents: ", error);
+    return ({error:"Error getting documents"});
+  });
+  return status;
+  
+}
 /*
 
 <Toolbar

@@ -13,18 +13,20 @@ import {
   Picker,
   BackHandler,
   DeviceEventEmitter,
-  ToolbarAndroid
+  ToolbarAndroid,
+  Image
   
 } from "react-native";
 import { Icon, Right } from 'native-base'
 import { GiftedChat, InputToolbar } from "react-native-gifted-chat";
-import { getUserChat, saveSendMsg, sendMsg, updateReceivedMsg,handleRightElementPress } from "./data";
+import { getUserChat, saveSendMsg, sendMsg, updateReceivedMsg,handleRightElementPress,replayMessageTemplate } from "./data";
 import NavBar from "./NavBar";
 import CustomView from "./CustomView";
 import { getUserStatus } from "../db/dbutil";
 import HeaderComponent from "./HeaderComponent";
 import ModalDropdown from 'react-native-modal-dropdown';
 import { Toolbar } from 'react-native-material-ui';
+import commonStyle from './style';
 const styles = StyleSheet.create({
   container: { flex: 1 },
   sendButtonContainer: { color: "red" },
@@ -36,6 +38,8 @@ const styles = StyleSheet.create({
     //textAlign: 'center',
     textAlignVertical: 'center',
   },
+
+  
 
 });
 import {
@@ -74,7 +78,38 @@ export default class UserNotification extends Component {
     
     this.backPressSubscriptions = new Set()
   }
+  _dropdown_2_renderButtonText(rowData) {
+    console.log("rowdata:" ,rowData)
+    const {name} = rowData;
+    this.setState({ language: name , isHidden: false })
+    return `${name}`;
+  }
   
+  _dropdown_2_renderRow(rowData, rowID, highlighted) {
+    let icon =require('../../assets/avatar.png');
+    let evenRow = rowID % 2;
+    return (
+      <TouchableHighlight underlayColor='cornflowerblue'>
+        <View style={[commonStyle.dropdown_2_row, {backgroundColor: evenRow ? 'lemonchiffon' : 'white'}]}>
+          <Image style={commonStyle.dropdown_2_image}
+                 mode='stretch'
+                 source={icon}
+          />
+          <Text style={[commonStyle.dropdown_2_row_text, highlighted && {color: 'mediumaquamarine'}]}>
+            {`${rowData.name}`}
+          </Text>
+        </View>
+      </TouchableHighlight>
+    );
+  }
+  
+  _dropdown_2_renderSeparator(sectionID, rowID, adjacentRowHighlighted) {
+    if (rowID == replayMessageTemplate.length - 1) return;
+    let key = `spr_${rowID}`;
+    return (<View style={commonStyle.dropdown_2_separator}
+                  key={key}
+    />);
+  }
   static rightElementPress = (label)=>{
     console.log("label");
 
@@ -115,20 +150,22 @@ export default class UserNotification extends Component {
     // })
   }
   setMsg(msg) {
-    console.log("user chat received");
+    console.log("user chat received",msg);
     try {
       
       if(msg && msg.length >0){
+        console.log("state,",this.state);
         this.setState({ messages: msg, appIsReady: true });
         this.setState({headerTitle:msg[0].user.name});
+        updateReceivedMsg(msg);
       }
       
     } catch (error) {
+      console.log("setMsg Error",error)
       
-    }
+    } 
     
     
-    updateReceivedMsg(msg);
   }
   setUser = user => {
     console.log("setUser user Notification screen");
@@ -266,26 +303,23 @@ export default class UserNotification extends Component {
     //return <InputToolbar {...props} containerStyle={{borderTopWidth: 1.5, borderTopColor: '#333'}} />
     return (
       <View style={{ flex: 1, flexDirection: "row" }}>
-        <Picker 
-          selectedValue={this.state.language}
-          style={[
-            {
-              height: 50,
-              color: "#000000",
-              borderBottomWidth: 1
-            },
-            this.state.isHidden ? { width: "100%" } : { width: "70%" }
-          ]}
-          onValueChange={(itemValue, itemIndex) =>
-            this.setState({ language: itemValue, isHidden: false })
-          }
-        >
-          <Picker.Item label="Please Select The Message" value="" />
-          <Picker.Item label="JavaScript" value="js" />
-          <Picker.Item label="C" value="c" />
-          <Picker.Item label="C++" value="c++" />
-          <Picker.Item label="Java" value="Java" />
-        </Picker>
+        
+        <ModalDropdown ref="dropdown_2"
+               
+                style={[
+                  commonStyle.dropdown_2,
+                  this.state.isHidden ? { width: "100%" } : { width: "70%" }
+                ]}
+                textStyle={[commonStyle.dropdown_2_text,{color:"black"}]}
+                dropdownStyle={commonStyle.dropdown_2_dropdown}
+                options={replayMessageTemplate}
+                defaultValue={"Please Select The Message"}
+                renderButtonText={(rowData) => this._dropdown_2_renderButtonText(rowData)}
+                renderRow={this._dropdown_2_renderRow.bind(this)}
+                renderSeparator={(sectionID, rowID, adjacentRowHighlighted) => this._dropdown_2_renderSeparator(sectionID, rowID, adjacentRowHighlighted)}
+                
+            />
+        
 
         <TouchableHighlight
           style={[

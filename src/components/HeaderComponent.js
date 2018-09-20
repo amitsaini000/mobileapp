@@ -22,7 +22,8 @@ class CustomHeader extends Component {
                             this.props.navigation.openDrawer();
                             
                         }} />
-                        <Logo style={{marginRight: 20,}}/> 
+                        <Logo style={{marginRight: 20,}} 
+                        /> 
                     </View>
                     
                 </Left>
