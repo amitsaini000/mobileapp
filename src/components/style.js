@@ -5,19 +5,37 @@ export const IMAGE_HEIGHT = window.width / 4;
 export const IMAGE_HEIGHT_SMALL = window.width /7;
 
 export default StyleSheet.create({
+  
+    theme : {      flex: 1,
+      flexDirection: "column",
+  
+  },
+  color : {
+    
+    backgroundColor: "red",    
+
+},
+
   dropdown_2: {
-    width: "90%",
-    marginTop: 7,
-    borderBottomWidth:1,
-    borderColor:"white"
+    width: "100%",
+    marginTop: 25,
+    //borderBottomWidth:1,
+    borderColor:"red",
+    borderWidth:0,
+    backgroundColor:"white",
+    height:48,
+    paddingVertical: 10,
+    marginBottom: 50,
+  
+    
   },
   dropdown_2_text: {
     //marginVertical: 10,
-    marginHorizontal: 6,
+    marginHorizontal: 15,
     fontSize: 18,
-    color: 'white',
+    color: 'black',
     textAlign: 'left',
-    //textAlignVertical: 'center',
+    textAlignVertical: 'center',
   },
   dropdown_2_dropdown: {
     width: "90%",
@@ -46,5 +64,12 @@ export default StyleSheet.create({
     height: 1,
     backgroundColor: 'cornflowerblue',
   }, 
+
+  hideo_view :{
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: "flex-start",
+    //height: 50
+  }
 
 });

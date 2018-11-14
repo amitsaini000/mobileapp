@@ -1,130 +1,37 @@
-/*
-Mr Nguyen Duc Hoang
-https://www.youtube.com/c/nguyenduchoang
-Email: sunlight4d@gmail.com
-LoginCompenent 
-*/
+
 import React, { Component } from "react";
 import {
   Text,
   View,
   Image,
-  TouchableHighlight,
+  TouchableHighlight,TouchableOpacity,
   StyleSheet,ScrollView,KeyboardAvoidingView,ActivityIndicator,
   
 } from "react-native";
-import { Register, Home } from "../screens/screen";
-import HeaderComponent from "./HeaderComponent";
-import UserInput from "./UserInput";
 import styles, { IMAGE_HEIGHT, IMAGE_HEIGHT_SMALL } from "./style";
-import usernameImg from "../../assets/username.png";
-import passwordImg from "../../assets/password.png";
-import eyeImg from "../../assets/eye_black.png";
-import Logo from "./Logo";
-import t from "tcomb-form-native"; // 0.6.11
-import {fire} from "../db/config";
 import DropdownAlert from 'react-native-dropdownalert';
 import {signOut,signIn} from "../db/dbutil";
-//import { createDrawerNavigator,DrawerItems,createStackNavigator } from 'react-navigation';
-import {  drawerIcon } 
-  from 'native-base'
-const backgroundColor = "#0067a7";
-const Form = t.form.Form;
-const User = t.struct({
-  email: t.Number,
-  password: t.String
-});
+ 
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
+//import MaterialsIcon from 'react-native-vector-icons/MaterialIcons';
+import Hideo  from './Hideo';
 
-const formStyles = {
-  ...Form.stylesheet,
-  formGroup: {
-    normal: {
-      marginBottom: 10
-    }
-  },
-  controlLabel: {
-    normal: {
-      color: "blue",
-      fontSize: 18,
-      marginBottom: 7,
-      fontWeight: "600"
-    },
-    // the style applied when a validation error occours
-    error: {
-      color: "red",
-      fontSize: 18,
-      marginBottom: 7,
-      fontWeight: "600"
-    }
-  },
-  textbox: {
-    // the style applied wihtout errors
-    normal: {
-      color: "white",
-      fontSize: 17,
-      height: 40,
-      //padding: 15,
-      // borderRadius: 4,
-      borderColor: "#cccccc", // <= relevant style here
-      //borderWidth: 1,
-      marginBottom: 8,
-      width: 300,
-      borderBottomWidth: 1,
-      fontWeight: "bold"
-    },
-
-    // the style applied when a validation error occours
-    error: {
-            color: "white",
-            fontSize: 17,
-            height: 40,
-            //padding: 10,
-            // borderRadius: 4,
-            borderColor: "#a94442", // <= relevant style here
-            //borderWidth: 1,
-            marginBottom: 8,
-            width: 300,
-            borderBottomWidth: 1,
-            fontWeight: "bold"
-    }
-  }
-};
+import Register from "./Register";
+import { backgroundColor } from "./data";
 
 
 export default class LoginCompenent extends Component {
-    options = {
-    stylesheet: formStyles,
-    order: ["email", "password"],
-    fields: {
-      email: {
-        placeholder: "Mobile No.",
-        error: "email is empty?",
-        auto: "none",
-        returnKeyType: "next"
-      },
-  
-      password: {
-        placeholder: "Password",
-        auto: "none",
-        //returnKeyType: "send",
-        autoCorrect: false,
-        //secureTextEntry:true
-        returnKeyType: "go",
-        onSubmitEditing : () => { 
-          console.log('collapse changed');
-          this.login(); 
-         },
-         //onSubmitEditing:{(event) => this.onSubmitHandler(event)}
-      }
-    }
-  };
+   
   constructor(props) {
     super(props);
     this.state = {
       showPass: true,
       press: false,
       formValue: null ,
-      loading:false
+      loading:false,
+      userMobileInput:"",
+      userPasswordInput:"",
+      isLoginUi : true
     };
     this.showPass = this.showPass.bind(this);
     this.login = this.login.bind(this);
@@ -142,17 +49,27 @@ export default class LoginCompenent extends Component {
 }
   
   login () {
+
+       
     if(this.state.loading){
       return;
     }
-    const value = this._form.getValue();
-    console.log('value: ', value);
-    if(value){
+    let isError = false;
+    if(!this.state.userMobileInput ){
+      this.setState({userMobileInput: true});
+      isError = true;
+    }
+    if(!this.state.userPasswordInput){
+       this.setState({userPasswordInput: true});
+       isError = true;
+    }
+    //console.log('isError exist: ', isError);
+    if(! isError && this.state.userMobileInput !== true && this.state.userPasswordInput !== true){
      this.setState({loading:true}) 
-     const email = value.email+"mom@mom.com";
+     const email = this.state.userMobileInput+"mom@mom.com";
      var getUser = function(user){
          if(user){
-          this.setState({loading:false,formValue:null})  
+          this.setState({loading:false,userMobileInput:"",userPasswordInput:""})  
           const { navigate } = this.props.navigation;
           navigate("Profile");  
 
@@ -161,7 +78,7 @@ export default class LoginCompenent extends Component {
           this.setState({loading:false}) 
          }
      }.bind(this)
-     signIn(email,value.password,getUser)
+     signIn(email,this.state.userPasswordInput,getUser)
    }
   };
   showPass() {
@@ -172,9 +89,9 @@ export default class LoginCompenent extends Component {
 
   
   showLoader =()=> {
-  return (<TouchableHighlight
+  return (<TouchableOpacity
         style={styles1.buttonStyle}
-        onPress={this.state.loading  ? {} : this.login.bind(this)}
+        onPress={this.state.loading  ? null : this.login.bind(this)}
         //underlayColor="#99d9f4"
       >
       
@@ -182,7 +99,7 @@ export default class LoginCompenent extends Component {
         this.state.loading ?  <ActivityIndicator size="large" color="#0000ff" /> 
                            :  <Text style={styles.buttonText}>Login</Text>
       }
-      </TouchableHighlight>)
+      </TouchableOpacity>)
 
   }
   // static navigationOptions = ({ navigation }) => {
@@ -205,6 +122,7 @@ export default class LoginCompenent extends Component {
     headerTitleStyle: {
       fontWeight: 'bold',
     },
+    
     drawer: () => ({
       label: 'Login',
       icon: () =><Image  source={require("../../assets/home-icon.png")}
@@ -212,10 +130,8 @@ export default class LoginCompenent extends Component {
                 />
     })
   }
-  
-  render() {
-    return (
-      <View
+  loginUI = ()=>{
+    return(<View
         style={{
           flex: 1,
           flexDirection: "column",
@@ -223,18 +139,39 @@ export default class LoginCompenent extends Component {
         }}
       >
         
-        <ScrollView style={{ flex: 1 }}>
-          <KeyboardAvoidingView style={styles.container} behavior="padding">
-            <Form
-              ref={c => (this._form = c)}
-              type={User}
-              options={this.options}
-              value={this.state.formValue}
-              padding={35}
-              onChange={formValue => this.setState({ formValue })}
-              //onSubmit= {(event) => this.login(event)}
-              //onSubmitEditing={(event) => this.login(event)}
-            />
+        <ScrollView style={{ flex: 1,marginTop:40 }}>
+          <KeyboardAvoidingView style={[{alignItems:"center"}]} behavior="padding">
+            
+            <Hideo
+            style = {{width:"94%"}}
+            iconClass={FontAwesomeIcon}
+            //iconClass={MaterialsIcon}
+            //iconName={'directions-bus'} //class not need 
+            iconName={'phone'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'}           
+            keyboardType="numeric"
+            placeholder = "Enter Mobile Number"            
+            onChangeText={(text) => this.setState({userMobileInput: text})}             
+            vehicleInputError =  {this.state.userMobileInput} 
+            value = {this.state.userMobileInput}     
+          />
+          <Hideo
+            style = {{width:"94%"}}
+            iconClass={FontAwesomeIcon}
+            //iconClass={MaterialsIcon}
+            //iconName={'directions-bus'} //class not need 
+            iconName={'unlock'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'}           
+            
+            placeholder = "Enter Password"            
+            onChangeText={(text) => this.setState({userPasswordInput: text})}             
+            vehicleInputError =  {this.state.userPasswordInput} 
+            value ={this.state.userPasswordInput}      
+          />
             <View  style={{flex: 1, flexDirection: 'row'}} >
             {this.showLoader()} 
              
@@ -242,13 +179,14 @@ export default class LoginCompenent extends Component {
             <TouchableHighlight
               style={styles1.buttonStyle}
               onPress={() => {
-                const { navigate } = this.props.navigation;
-                navigate("Signup");                                             
+              this.setState({isLoginUi:false})
+                // const { navigate } = this.props.navigation;
+                //navigate("Signup");                                             
             }}
 
               //underlayColor="#99d9f4"
             >
-             <Text style={styles.buttonText}>Signup</Text>
+             <Text style={styles.buttonText}>Signup</Text> 
             </TouchableHighlight>
             
             </View>
@@ -271,8 +209,18 @@ export default class LoginCompenent extends Component {
           </KeyboardAvoidingView>
         </ScrollView>
         <DropdownAlert ref={ref => this.dropdown = ref} onClose={data => this.onClose(data)} closeInterval ={10000}/>  
-      </View>
-    );
+      </View>)
+  }
+  render() {
+    //console.log("login.js ",this.state.isLoginUi);
+    if(this.state.isLoginUi){
+      
+      return this.loginUI();
+    }
+    if(!this.state.isLoginUi){
+      return (<Register/>)
+    }
+    
   }
 }
 const styles1 = StyleSheet.create({

@@ -97,13 +97,14 @@ export default class Hideo extends BaseInput {
           {...this.props}
           style={[styles.textInput, 
             inputStyle,
-            this.state.error ? { borderColor: "red" } : {  borderColor: styles.textInput.borderColor }
+            this.state.error ? { borderWidth: 2 } : {  borderWidth : 0 }
           ]}
           value={value}
           onBlur={this._onBlur}
           onChange={this._onChange}
           onFocus={this._onFocus}
           underlineColorAndroid={'transparent'}
+         
         />
       </Card>
     );
@@ -112,20 +113,26 @@ export default class Hideo extends BaseInput {
 
 const styles = StyleSheet.create({
   container: {
-    // flex: 1,
+    flex: 1,
     flexDirection: 'row',
-    //width:"70%",
+    width:"100%",
     //height:50
+    //borderWidth:3,
+    //borderColor:"grey",
+    //fontWeight: "bold",
     
   },
   textInput: {
-    //flex: 1,
+    flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 0,
-    color: 'black',
+    //color: 'black',
     backgroundColor: 'white',
     fontSize: 18,
-    width:"70%", 
-    borderColor:"white"
+    width:"100%", 
+    borderColor:"red",
+    borderWidth:2,
+   // height:50
+    
   },
 });

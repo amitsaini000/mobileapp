@@ -1,7 +1,18 @@
 import {fire} from "./config";
-import { Login } from "../screens/screen";
 
-var  isUser;
+let  isUser;
+
+export async function getUserStatusAsync(cb) {
+    let temp;
+    console.log("getUserStatusAsync",isUser) 
+     if(!isUser){
+       fire.auth().onAuthStateChanged(cb);       
+     }
+     else{
+        return isUser;  
+     }
+     
+ }
 export function getUserStatus(cb) {
     
    //console.log("getUserStatus",isUser) 
@@ -13,18 +24,18 @@ export function getUserStatus(cb) {
             if (user) {
                 console.log("getUserStatus user exist")
                 isUser = user;
-                cb(user);      
+                return cb(user);      
             }
             else {
                 console.log("getUserStatus Not exist")            
-                cb(null)
+                return cb(null)
             }
         }
         );
         
     }
     else{
-        cb(isUser)
+       return cb(isUser)
     }    
 }
 export function signOut(){
@@ -56,4 +67,5 @@ export function signOut(){
       });
  }
 
+ 
 //export  user = getUserStatus(); 

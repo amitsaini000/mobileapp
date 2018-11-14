@@ -39,15 +39,16 @@ export default class BaseInput extends Component {
     this.state = {
       value,
       focusedAnim: new Animated.Value(value ? 1 : 0),
-      error:false
+      error: props.vehicleInputError
     };
+    //console.log("baseInput",props);
   }
 
   componentWillReceiveProps(newProps) {
     const newValue = newProps.value;
     if (newProps.hasOwnProperty('value') && newValue !== this.state.value) {
       this.setState({
-        value: newValue,
+        value: newValue
       });
 
       // animate input if it's active state has changed with the new value
@@ -60,6 +61,12 @@ export default class BaseInput extends Component {
         }
       }
     }
+    if(newProps.vehicleInputError === true){
+      this.setState({error: newProps.vehicleInputError });
+    }
+    
+    //console.log("baseInputwill receive props",newProps);
+    //console.log("baseInputwill receive props state",this.state);
   }
 
   _onLayout(event) {
@@ -71,13 +78,17 @@ export default class BaseInput extends Component {
   _onChange(event) {
     this.setState({
       value: event.nativeEvent.text,
+      error:false
     });
 
     const onChange = this.props.onChange;
     if (onChange) {
       onChange(event);
     }
+    
+    //this.setState({error:false});
     //console.log("onchange",this.state)
+    //console.log("onchange",event.nativeEvent)
   }
 
   _onBlur(event) {
@@ -89,12 +100,13 @@ export default class BaseInput extends Component {
     if (onBlur) {
       onBlur(event);
     }
-    console.log("onchange",this.state);
+    
     if(!this.state.value ){
       this.setState({error:true});
     }else{
       this.setState({error:false});
     }
+    //console.log("_onBlur",this.state);
   }
 
   _onFocus(event) {
@@ -104,6 +116,12 @@ export default class BaseInput extends Component {
     if (onFocus) {
       onFocus(event);
     }
+    if(!this.state.value ){
+      this.setState({error:true});
+    }else{
+      this.setState({error:false});
+    }
+   // console.log("_onFocus",this.state);
   }
 
   _toggle(isActive) {

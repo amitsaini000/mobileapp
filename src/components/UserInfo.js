@@ -8,16 +8,13 @@ import React, { Component } from "react";
 import {
   Text,
   View,
-  Image,
-  TouchableHighlight,
+  Image,  
   StyleSheet,
   KeyboardAvoidingView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert
+  Alert,
+  ActivityIndicator
 } from "react-native";
-import { Container, Content, Footer, Title, Button, Icon } from "native-base";
-import { Divider } from "react-native-elements";
+
 import { getUserStatus } from "../db/dbutil";
 import {
   getUserInfo,
@@ -26,152 +23,63 @@ import {
   UpdateVehicle,
   deleteFiled
 } from "./data";
-import t from "tcomb-form-native"; // 0.6.11
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import DropdownAlert from "react-native-dropdownalert";
 import BottomNavigation, {
   FullTab
 } from "react-native-material-bottom-navigation";
 
-const Form = t.form.Form;
-const Mobile = t.refinement(t.Number, function(n) {
-  return n == 10;
-});
-Mobile.getValidationErrorMessage = function() {
-  return "Invalid Number";
-};
+import { Login } from "../screens/screen";
+import DisplayUser from "./DisplayUser";
+import EditUserForm from "./EditUserForm";
+import EmergencyForm from "./EmergencyForm";
+import AddMoreVehicle from "./AddMoreVehicle";
+import LoginCompenent from "./Login";
+import { backgroundColor,headerColor } from "./data";
 
-t.Number.getValidationErrorMessage = function(value) {
-  if (!value) return "empty number";
-  else if (!Number.isInteger(value)) return "Invalid Number";
-};
+import { connect } from 'react-redux';
+import { withNavigation } from 'react-navigation';
 
-const formStyles = {
-  ...Form.stylesheet,
-  formGroup: {
-    normal: {
-      marginBottom: 10
-    }
-  },
-  controlLabel: {
-    normal: {
-      color: "blue",
-      fontSize: 18,
-      marginBottom: 7,
-      fontWeight: "600"
-    },
-    // the style applied when a validation error occours
-    error: {
-      color: "red",
-      fontSize: 18,
-      marginBottom: 7,
-      fontWeight: "600"
-    }
-  },
-  textbox: {
-    // the style applied wihtout errors
-    normal: {
-      color: "white",
-      fontSize: 17,
-      height: 40,
-      //padding: 15,
-      // borderRadius: 4,
-      borderColor: "#cccccc", // <= relevant style here
-      //borderWidth: 1,
-      marginBottom: 8,
-      width: 300,
-      borderBottomWidth: 1,
-      fontWeight: "bold"
-    },
+import {watchPersonData} from "../reducers/person";
 
-    // the style applied when a validation error occours
-    error: {
-      color: "#000000",
-      fontSize: 17,
-      height: 36,
-      padding: 10,
-      // borderRadius: 4,
-      borderColor: "#a94442", // <= relevant style here
-      //borderWidth: 1,
-      marginBottom: 5,
-      width: 300,
-      borderBottomWidth: 1,
-      fontWeight: "bold"
-    }
-  }
-};
-const backgroundColor = "#0067a7";
-let options = {
-  stylesheet: formStyles,
-  order: ["name", "vehicle"],
-  fields: {
-    name: {
-      placeholder: "Name",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false,
-      error: "Empty"
-      // onSubmitEditing: {this.setFocus("otp")},
-    },
-    vehicle: {
-      placeholder: "VECHILE",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false
-    },
-    vehicle1: {
-      placeholder: "VECHILE",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false
-    },
-    vehicle2: {
-      placeholder: "VECHILE",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false
-    },
-    mobile1: {
-      placeholder: "mobile",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false
-    },
-    mobile2: {
-      placeholder: "mobile",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false
-    },
-    mobile3: {
-      placeholder: "mobile",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false
-    }
-  }
-};
+import { Icon } from "react-native-vector-icons/FontAwesome";
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
+import MaterialsIcon from 'react-native-vector-icons/MaterialIcons';
 
+const barColor = headerColor;
+const iconMessage = (<FontAwesomeIcon  size={25} name={'ambulance'}  
+               style={{color:"green",backgroundColor:"red",margin: 25}} 
+               /> 
+               );
 //import {editUser} from './EditUser';
-export default class UserInfo extends Component {
+class UserInfo extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      uid: null,
-      user: null,
-      formValue: {},
       editUser: false,
       emergency: false,
       addVehicle: false,
-      loading: false
-    };
+      loading: false,      
+      uid: null,
+      user: null,
+      formValue: {},
+      vehicle: "",
+      vehicle1: "",
+      vehicle2: "",
+      mobile1: 0,
+      mobile2: 0,
+      name: "",
+      mobile: 0,
+      appLoading:true
+    };   
+
   }
 
   deleteFileds = (num, field) => {
-    if(num == "" || !num){
-        return;
-    }  
+    if (num == "" || !num) {
+      return;
+    }
     console.log("delet", num);
     Alert.alert(
       " Delete Action",
@@ -186,11 +94,10 @@ export default class UserInfo extends Component {
         {
           text: "OK",
           onPress: () => {
-            deleteFiled(this.state.uid, num, field);
-            const updatedOne = { ...this.state.user};
+            deleteFiled(this.props.person.uid, num, field);
+            const updatedOne = { ...this.props.person };
             updatedOne[field] = "";
-            this.setState({user: updatedOne });
-            //console.log("state::",this.state)
+            this.setState({ user: updatedOne });
           }
         }
       ],
@@ -200,28 +107,30 @@ export default class UserInfo extends Component {
   tabs = [
     {
       key: "editUser",
-      icon: "person",
+      icon: "user",
       label: "Edit",
-      barColor: backgroundColor,
+      barColor: barColor,
       pressColor: "rgba(255, 255, 255, 0.16)"
     },
     {
       key: "emergency",
-      icon: "medkit",
+      icon: "ambulance",
       label: "Emergency Number",
-      barColor: backgroundColor,
+      barColor: barColor,
       pressColor: "rgba(255, 255, 255, 0.16)"
     },
     {
       key: "addVehicle",
       icon: "car",
       label: "Add",
-      barColor: backgroundColor,
+      barColor: barColor,
       pressColor: "rgba(255, 255, 255, 0.16)"
     }
   ];
-  renderIcon = icon => ({ isActive }) => <Icon size={28} name={icon} />;
-
+  renderIcon = icon => ({ isActive }) => <FontAwesomeIcon size={isActive ? 30 : 27}  
+                                          name={icon}  
+                                          color={ isActive ?"white":"grey"} />;
+ 
   renderTab = ({ tab, isActive }) => (
     <FullTab
       isActive={isActive}
@@ -231,164 +140,121 @@ export default class UserInfo extends Component {
       renderIcon={this.renderIcon(tab.icon)}
     />
   );
-  getUser() {
-    if (this._isMounted) {
-      getUserStatus(this.checkLogin);
-    }
+  static getDerivedStateFromProps(nextProps, state){
+    console.log("getDerivedStateFromProps userInfo.js---");
+    if(nextProps.person){
+      console.log("getDerivedStateFromProps---<><><>><>><><>>>><><>",nextProps.person);
+      //this.props.person = nextProps.person
+      //this.setState({...nextProps.person})
+      state = {
+       name :nextProps.person.name,
+       mobile :nextProps.person.mobile || 0,
+       mobile1 :nextProps.person.mobile1 || 0,
+       mobile2 :nextProps.person.mobile2 || 0,
+       vehicle :nextProps.person.vehicle,
+       vehicle1 :nextProps.person.vehicle1 || "",
+       vehicle2 :nextProps.person.vehicle2 || "",
+       uid :nextProps.person.uid,
+       user:nextProps.person,
+       appLoading:false
+     };
+     return state;
+      
+     }
+     return null;
   }
+  componentDidUpdate(nextProps) {
+    console.log("componentDidUpdate userInfo.js---");    
+ }
   componentDidMount() {
-    this._isMounted = true;
-    this.getUser();
+    this._isMounted = true;    
   }
   componentWillUnmount() {
+   // console.log(" userInfo getUser willmount:::");
     this._isMounted = false;
   }
-  checkLogin = async user => {
-    console.log(" user Profile checkLogin:::");
-    if (user) {
-      this.setState({ uid: user.uid });
-      let useerInfo = await getUserInfo(user.uid);
-      this.setState({ user: useerInfo });
-    } else {
-      const { navigate } = this.props.navigation;
-      navigate("Login");
-    }
-  };
-  renderUser() {
-    console.log(" user Profile :", this.state.user);
-    if (this.state.user) {
-      return (
-        <Container
-          style={{
-            width: "100%",
-            backgroundColor: backgroundColor,
-            height: "50%",
-            borderRadius: 5
-          }}
-        >
-          <Content style={{}}>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Image
-                source={{
-                  uri:
-                    "https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg"
-                }}
-                style={styles.photo}
-              />
-              <Text
-                style={{
-                  left: -45,
-                  fontSize: 15,
-                  fontWeight: "bold",
-                  color: "white",
-                  padding: 10
-                }}
-              >
-                {this.state.user.name} {this.state.user.mobile}
-              </Text>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "flex-start",
-                marginLeft: 10
-              }}
-            >
-              <Text style={{ color: "white", fontWeight: "bold" }}>
-                Vehicle : {this.state.user.vehicle}
-              </Text>
-
-              <TouchableOpacity
-                onPress={() =>
-                  this.deleteFileds(this.state.user.vehicle1 || "", "vehicle1")
-                }
-              >
-                <Text style={{ color: "white", fontWeight: "bold" }}>
-                  {" "}
-                  {this.state.user.vehicle1 || ""}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() =>
-                  this.deleteFileds(this.state.user.vehicle2 || "", "vehicle2")
-                }
-              >
-                <Text style={{ color: "white", fontWeight: "bold",marginLeft:10 }}>
-                  {this.state.user.vehicle2 || ""}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "flex-start",
-                margin: 10
-              }}
-            >
-              <Text style={{ color: "white", fontWeight: "bold" }}>
-                Emergency Mobile :
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  this.deleteFileds(this.state.user.mobile1 || "", "mobile1")
-                }
-              >
-                <Text style={{ color: "white", fontWeight: "bold" }}>
-                  {this.state.user.mobile1 || ""}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() =>
-                  this.deleteFileds(this.state.user.mobile2 || "", "mobile2")
-                }
-              >
-                
-                <Text style={{ color: "white", fontWeight: "bold",marginLeft:10 }}>
-                  {this.state.user.mobile2 || ""}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Content>
-        </Container>
-      );
-    }
-  }
-  updateUserNameAndVehicle = async () => {
+  /*
+  componentWillReceiveProps(nextProps){
+      if(nextProps.person){
+       console.log("componentWillReceiveProps---<><><>><>><><>>>><><>",nextProps.person);
+       this.props.person = nextProps.person
+       //this.setState({...nextProps.person})
+       this.setState ( {
+        name :nextProps.person.name,
+        mobile :nextProps.person.mobile || 0,
+        mobile1 :nextProps.person.mobile1 || 0,
+        mobile2 :nextProps.person.mobile2 || 0,
+        vehicle :nextProps.person.vehicle,
+        vehicle1 :nextProps.person.vehicle1 || "",
+        vehicle2 :nextProps.person.vehicle2 || "",
+        uid :nextProps.person.uid,
+        user:nextProps.person
+      })
+       
+      }    
+        
+  }*/
+  
+ 
+  updateUserNameAndVehicle = async formValue => {
     //this.setState({editUser:false});
-    const value = this._form.getValue();
-    console.log("value: ", value);
-    if (value) {
+    let isError = false;
+    const { name, vehicle } = formValue;
+
+    if (!name) {
+      this.setState({ nameError: true });
+      isError = true;
+    }
+
+    if (!vehicle) {
+      this.setState({ vehicleError: true });
+      isError = true;
+    }
+
+     console.log("name:", formValue);
+
+    if (
+      !isError &&
+      this.state.nameError !== true &&
+      this.state.vehicleError !== true
+    ) {
+      console.log("name in:", name);
+      console.log("vehicle inside:", vehicle);
       this.setState({ loading: true });
       //this.setState({ mobile: value.mobile });
       var dataObj = {
-        name: value.name,
-        vehicle: value.vehicle.replace(/[\. ,:-]+/g, "").toUpperCase(),
-        oldName: this.state.user.name,
-        oldVehicle: this.state.user.vehicle,
-        token: this.state.user.token
+        name: name,
+        vehicle: vehicle.replace(/[\. ,:-]+/g, "").toUpperCase(),
+        oldName: this.props.person.name,
+        oldVehicle: this.props.person.vehicle,
+        token: this.props.person.token
       };
       console.log("dataObj: ", dataObj);
-      console.log("uid current ", this.state.user.uid);
-      let status = await UpdateUserNameVehicle(this.state.user.uid, dataObj);
+      console.log("uid current ", this.props.person.uid);
+      let status = await UpdateUserNameVehicle(this.props.person.uid, dataObj);
       console.log("status::", status);
       if (status.error) {
         this.onError(status.error);
       }
       if (status.success) {
         this.onSuccess(status.success);
-        this.setState({ formValue: null });
-        let useerInfo = await getUserInfo(this.state.user.uid);
+        this.setState({
+          name: this.props.person.name,
+          vehicle: this.props.person.vehicle
+        });
+        let useerInfo = await getUserInfo(this.props.person.uid);
         this.setState({ user: useerInfo, editUser: false });
       }
       this.setState({ loading: false });
     }
   };
-  updateEmergencyNumber = async () => {
-    const value = this._form.getValue();
+  updateEmergencyNumber = async formValue => {
+    const value = {
+      mobile1: formValue.mobile1,
+      mobile2: formValue.mobile2
+    };
     console.log("value: ", value);
-    if (value) {
+    if (value.mobile1 || value.mobile2) {
       //this.setState({ mobile: value.mobile });
       this.setState({ loading: true });
       var dataObj = {
@@ -396,24 +262,26 @@ export default class UserInfo extends Component {
         mobile2: value.mobile2
       };
       console.log("dataObj: ", dataObj);
-      let status = await UpdateEmergencyNumber(this.state.user.uid, dataObj);
+      let status = await UpdateEmergencyNumber(this.props.person.uid, dataObj);
       console.log("status::", status);
       if (status.error) {
         this.onError(status.error);
       }
       if (status.success) {
         this.onSuccess(status.success);
-        this.setState({ formValue: null });
-        let useerInfo = await getUserInfo(this.state.user.uid);
+        let useerInfo = await getUserInfo(this.props.person.uid);
         this.setState({ user: useerInfo, emergency: false });
+        this.setState({
+          mobile1: useerInfo.mobile1,
+          mobile2: useerInfo.mobile2
+        });
       }
     }
     this.setState({ loading: false });
   };
-  updateVehicle = async () => {
-    const value = this._form.getValue();
+  updateVehicle = async value => {
     console.log("value: ", value);
-    if (value) {
+    if (value.vehicle1 || value.vehicle2) {
       //this.setState({ mobile: value.mobile });
       this.setState({ loading: true });
       var dataObj = {
@@ -421,22 +289,27 @@ export default class UserInfo extends Component {
         vehicle2: value.vehicle2
           ? value.vehicle2.replace(/[\. ,:-]+/g, "").toUpperCase()
           : null,
-        token: this.state.user.token,
-        name: this.state.user.name,
-        oldVehicle1: this.state.user.vehicle1 || null,
-        oldVehicle2: this.state.user.vehicle2 || null
+        token: this.props.person.token,
+        name: this.props.person.name,
+        oldVehicle1: this.props.person.vehicle1 || null,
+        oldVehicle2: this.props.person.vehicle2 || null
       };
       console.log("dataObj: ", dataObj);
-      let status = await UpdateVehicle(this.state.user.uid, dataObj);
+      let status = await UpdateVehicle(this.props.person.uid, dataObj);
       console.log("status::", status);
       if (status.error) {
         this.onError(status.error);
       }
       if (status.success) {
         this.onSuccess(status.success);
-        this.setState({ formValue: null });
-        let useerInfo = await getUserInfo(this.state.user.uid);
-        this.setState({ user: useerInfo, addVehicle: false });
+
+        let useerInfo = await getUserInfo(this.props.person.uid);
+        this.setState({
+          user: useerInfo,
+          addVehicle: false,
+          vehicle1: useerInfo.vehicle1,
+          vehicle2: useerInfo.vehicle2
+        });
       }
     }
     this.setState({ loading: false });
@@ -450,242 +323,36 @@ export default class UserInfo extends Component {
   addVehicleCancel = () => {
     this.setState({ addVehicle: false });
   };
-  editUserForm = () => {
-    let formValue1 = {
-      name: this.state.user.name,
-      vehicle: this.state.user.vehicle
-    };
-    let User = t.struct({
-      name: t.String,
-      vehicle: t.String
-    });
-    options.order = ["name", "vehicle"];
-    //this.setState({formValue:formValue1})
-    console.log("form value", this.state.formValue);
-    return (
-      <View
-        style={{
-          flex: 1,
-          padding: 12,
-          //flexDirection: 'row',
-          alignItems: "flex-start",
-          //marginTop:10
-          top: 10
-        }}
-      >
-        <Form
-          ref={c => (this._form = c)}
-          type={User}
-          options={options}
-          value={formValue1}
-          //padding={50}
-          // onChange={formValue => this.setState({ formValue })}
-        />
-        <View
-          style={{
-            flex: 1,
-            flexDirection: "row"
-          }}
-        >
-          <TouchableHighlight
-            style={{
-              margin: 20,
-              width: "30%",
-              height: 45,
-              backgroundColor: "darkviolet",
-              padding: 10,
-              alignItems: "center"
-            }}
-            onPress={this.updateUserNameAndVehicle}
-          >
-            {this.state.loading ? (
-              <ActivityIndicator
-                animating={true}
-                size="large"
-                color="#0000ff"
-              />
-            ) : (
-              <Text style={{ color: "white", fontSize: 18 }}>Update </Text>
-            )}
-          </TouchableHighlight>
-          <TouchableHighlight
-            style={{
-              margin: 20,
-              width: "30%",
-              height: 45,
-              backgroundColor: "darkviolet",
-              padding: 10,
-              alignItems: "center"
-            }}
-            onPress={this.updateCancel}
-          >
-            <Text style={{ color: "white", fontSize: 18 }}>Cancel </Text>
-          </TouchableHighlight>
-        </View>
-      </View>
-    );
-  };
-  addVehicleForm = () => {
-    let formValue1 = {
-      vehicle1: this.state.user.vehicle1 || "",
-      vehicle2: this.state.user.vehicle2 || ""
-    };
-    let User = t.struct({
-      vehicle1: t.String,
-      vehicle2: t.maybe(t.String)
-    });
-    options.order = ["vehicle1", "vehicle2"];
-    //this.setState({formValue:formValue1})
-    console.log("form value", this.state.formValue);
-    return (
-      <View
-        style={{
-          flex: 1,
-          padding: 12,
-          //flexDirection: 'row',
-          alignItems: "flex-start",
-          marginTop: 10
-        }}
-      >
-        <Form
-          ref={c => (this._form = c)}
-          type={User}
-          options={options}
-          value={formValue1}
-          padding={50}
-          // onChange={formValue => this.setState({ formValue })}
-        />
-        <View
-          style={{
-            flex: 1,
-            flexDirection: "row"
-          }}
-        >
-          <TouchableHighlight
-            style={{
-              margin: 20,
-              width: "30%",
-              height: 45,
-              backgroundColor: "darkviolet",
-              padding: 10,
-              alignItems: "center"
-            }}
-            onPress={this.updateVehicle}
-          >
-            {this.state.loading ? (
-              <ActivityIndicator
-                animating={true}
-                size="large"
-                color="#0000ff"
-              />
-            ) : (
-              <Text style={{ color: "white", fontSize: 18 }}>Add </Text>
-            )}
-          </TouchableHighlight>
-          <TouchableHighlight
-            style={{
-              margin: 20,
-              width: "30%",
-              height: 45,
-              backgroundColor: "darkviolet",
-              padding: 10,
-              alignItems: "center"
-            }}
-            onPress={this.addVehicleCancel}
-          >
-            <Text style={{ color: "white", fontSize: 18 }}>Cancel </Text>
-          </TouchableHighlight>
-        </View>
-      </View>
-    );
-  };
-  emergencyForm = () => {
-    let formValue1 = {
-      mobile1: this.state.user.mobile1 || "",
-      mobile2: this.state.user.mobile2 || ""
-      //mobile3: 9350268283//this.state.user.mobile3
-    };
-    let User = t.struct({
-      mobile1: t.Number,
-      mobile2: t.Number
-      //mobile3: t.Number,
-      //password: t.String
-    });
-    options.order = ["mobile1", "mobile2"];
-    //this.setState({formValue:formValue1})
-    console.log("form value", this.state.formValue);
-    return (
-      <View
-        style={{
-          flex: 1,
-          padding: 12,
-          //flexDirection: 'row',
-          alignItems: "flex-start",
-          marginTop: 10
-        }}
-      >
-        <Form
-          ref={c => (this._form = c)}
-          type={User}
-          options={options}
-          value={formValue1}
-          padding={50}
-          // onChange={formValue => this.setState({ formValue })}
-        />
-        <View
-          style={{
-            flex: 1,
-            flexDirection: "row"
-          }}
-        >
-          <TouchableHighlight
-            style={{
-              margin: 20,
-              width: "30%",
-              height: 45,
-              backgroundColor: "darkviolet",
-              padding: 10,
-              alignItems: "center"
-            }}
-            onPress={this.updateEmergencyNumber}
-          >
-            {this.state.loading ? (
-              <ActivityIndicator
-                animating={true}
-                size="large"
-                color="#0000ff"
-              />
-            ) : (
-              <Text style={{ color: "white", fontSize: 18 }}>Add </Text>
-            )}
-          </TouchableHighlight>
-          <TouchableHighlight
-            style={{
-              margin: 20,
-              width: "30%",
-              height: 45,
-              backgroundColor: "darkviolet",
-              padding: 10,
-              alignItems: "center"
-            }}
-            onPress={this.emergencyCancel}
-          >
-            <Text style={{ color: "white", fontSize: 18 }}>Cancel </Text>
-          </TouchableHighlight>
-        </View>
-      </View>
-    );
-  };
-  renderEditUser() {
-    console.log("renderEditUser :", this.state);
+
+  renderEditUser() {   
+    
+    console.log("renderEditUser :",this.state);    
     if (this.state.editUser) {
-      return this.editUserForm();
+      return (
+        <EditUserForm
+          user={this.state}
+          cancel={this.updateCancel}
+          updateUserNameAndVehicle={this.updateUserNameAndVehicle}
+        />
+      );
     }
     if (this.state.emergency) {
-      return this.emergencyForm();
+      return (
+        <EmergencyForm
+          user={this.state}
+          cancel={this.emergencyCancel}
+          updateEmergencyNumber={this.updateEmergencyNumber}
+        />
+      );
     }
     if (this.state.addVehicle) {
-      return this.addVehicleForm();
+      return (
+        <AddMoreVehicle
+          user={this.state}
+          cancel={this.addVehicleCancel}
+          updateVehicle={this.updateVehicle}
+        />
+      );
     }
     return <View />;
   }
@@ -706,6 +373,7 @@ export default class UserInfo extends Component {
     // returns: automatic, programmatic, tap, pan or cancel
   }
   static navigationOptions = ({ navigation }) => {
+   
     let drawerLabel = "Profile";
     let drawerIcon = () => (
       <Image
@@ -715,69 +383,117 @@ export default class UserInfo extends Component {
     );
     return { drawerLabel, drawerIcon };
   };
-  render() {
+
+  
+  render() {   
+    
+    if(this.state.appLoading){
+      return( 
+      <View 
+        style={{
+        flex: 1,
+        flexDirection: "column",
+        backgroundColor: backgroundColor,
+        alignItems:"center",
+        justifyContent:"center"  
+      }}>
+      <ActivityIndicator size="large" color="#0000ff" />
+    </View>)
+    }
+    console.log(this.props.person.isUserLogin+"<------->"+this.state.appLoading)
+    if(this.props.person.isUserLogin == "false" && this.state.appLoading == false){      
+      return (<LoginCompenent/>)
+    }
+    
+    
     return (
       <View
-        style={{
-          flex: 1,
-          flexDirection: "column"
-        }}
-      >
-        <KeyboardAwareScrollView
-          style={{ backgroundColor: "#4c69a5" }}
-          resetScrollToCoords={{ x: 0, y: 0 }}
-          contentContainerStyle={styles.container}
-          scrollEnabled={false}
-        >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: backgroundColor,
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-          >
-            {this.renderUser()}
-            {this.renderEditUser()}
-          </View>
-        </KeyboardAwareScrollView>
-        <KeyboardAvoidingView
-          behavior={"padding"}
-          keyboardVerticalOffset={50}
-        />
-
-        <BottomNavigation
-          onTabPress={newTab => {
-            this.setState({ activeTab: newTab.key });
-
-            if (newTab.key == "addVehicle") {
-              this.setState({ editUser: false });
-              this.setState({ addVehicle: true });
-              this.setState({ emergency: false });
-            }
-            if (newTab.key == "editUser") {
-              this.setState({ editUser: true });
-              this.setState({ addVehicle: false });
-              this.setState({ emergency: false });
-            }
-            if (newTab.key == "emergency") {
-              this.setState({ editUser: false });
-              this.setState({ addVehicle: false });
-              this.setState({ emergency: true });
-            }
+      style={{
+        flex: 1,
+        flexDirection: "column",
+        backgroundColor: backgroundColor,
+      }}
+    >
+      
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: backgroundColor,
+            alignItems: "center",
+            justifyContent: "center"
           }}
-          renderTab={this.renderTab}
-          tabs={this.tabs}
-        />
-        <DropdownAlert
-          ref={ref => (this.dropdown = ref)}
-          onClose={data => this.onClose(data)}
-          closeInterval={10000}
-        />
-      </View>
-    );
+        >
+        <View style={{height:"32%",width:"100%"}}>
+         <DisplayUser
+              deleteFileds = {this.deleteFileds} 
+              parentState= {this.state.user || this.props.person}                           
+            />
+           </View>
+           <View style={{height:"60%",width:"100%"}}> 
+              {this.renderEditUser()}
+          </View>
+        </View>
+    
+      <KeyboardAvoidingView
+        behavior={"padding"}
+        keyboardVerticalOffset={50}
+      />
+
+      <BottomNavigation style={{}}
+        onTabPress={newTab => {
+          this.setState({ activeTab: newTab.key });
+
+          if (newTab.key == "addVehicle") {
+            this.setState({ editUser: false });
+            this.setState({ addVehicle: true });
+            this.setState({ emergency: false });
+          }
+          if (newTab.key == "editUser") {
+            this.setState({ editUser: true });
+            this.setState({ addVehicle: false });
+            this.setState({ emergency: false });
+          }
+          if (newTab.key == "emergency") {
+            this.setState({ editUser: false });
+            this.setState({ addVehicle: false });
+            this.setState({ emergency: true });
+          }
+        }}
+        renderTab={this.renderTab}
+        tabs={this.tabs}
+        style={ {
+        margin:2,
+        borderWidth:1,
+        borderColor:"#334146",  
+        alignContent:"center",
+        borderBottomWidth:0      
+      }}
+      />
+      <DropdownAlert
+        ref={ref => (this.dropdown = ref)}
+        onClose={data => this.onClose(data)}
+        closeInterval={10000}
+      />
+    </View>
+      
+    )
   }
 }
+
+const mapStateToProps = (state) => {
+  console.log("mapStateToProps-userInfo.js.js--",state)
+  return {
+      person: state.person
+  }
+}
+const mapDispatchToProps = (dispatch) => {
+  return { 
+    watchPersonData: () => { dispatch(watchPersonData()) },
+  };
+}
+
+
+export default connect(mapStateToProps,mapDispatchToProps)(withNavigation(UserInfo));
 
 const styles = StyleSheet.create({
   container: {

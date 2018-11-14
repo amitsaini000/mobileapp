@@ -1,17 +1,11 @@
-/*
-Mr Nguyen Duc Hoang
-https://www.youtube.com/c/nguyenduchoang
-Email: sunlight4d@gmail.com
-ProfileComponent 
-*/
+
 import React, { Component } from 'react';
 import {
     Text, View, Image, TouchableHighlight
 } from 'react-native';
-import { Info } from '../screens/screen';
 import HeaderComponent from './HeaderComponent';
 
-const backgroundColor = '#0067a7';
+import { backgroundColor } from "./data";
 export default class ProfileComponent extends Component {
     static navigationOptions = ({ navigation }) => {
         let drawerLabel = 'Profile';

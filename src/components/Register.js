@@ -1,187 +1,44 @@
 import React, { Component } from "react";
+
 import {
   StyleSheet,
   View,
   TextInput,
   Text,
   ScrollView,
-  Image,
-  Button,
-  Animated,
-  TouchableOpacity,
-  Keyboard,
   KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   TouchableHighlight
 } from "react-native";
 
-import styles, { IMAGE_HEIGHT, IMAGE_HEIGHT_SMALL } from "./style";
-import logo from "../../assets/logo.png";
-import HeaderComponent from "./HeaderComponent";
-import UserInput from "./UserInput";
-import valid from "./validation";
-import usernameImg from "../../assets/username.png";
-import passwordImg from "../../assets/password.png";
-import eyeImg from "../../assets/eye_black.png";
 import Expo from "expo";
-import { sendRequest } from "../utils/util";
-import t from "tcomb-form-native"; // 0.6.11
 import { db, fire } from "../db/config";
-import { Home } from "../screens/screen";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import DropdownAlert from "react-native-dropdownalert";
 import { getReceiverInfo } from "./data";
 
-const Form = t.form.Form;
-// const db = firebase.firestore();
-// const settings = { timestampsInSnapshots: true };
-// db.settings(settings);
-
-const Mobile = t.refinement(t.Number, function(n) {
-  return n == 10;
-});
-Mobile.getValidationErrorMessage = function() {
-  return "Invalid Number";
-};
-
-t.Number.getValidationErrorMessage = function(value) {
-  if (!value) return "empty number";
-  else if (!Number.isInteger(value)) return "Invalid Number";
-};
-
-const User = t.struct({
-  mobile: t.Number,
-  name: t.String,
-  otp: t.Number,
-  vechile: t.String,
-  password: t.String
-});
-
-const formStyles = {
-  ...Form.stylesheet,
-  formGroup: {
-    normal: {
-      marginBottom: 10
-    }
-  },
-  controlLabel: {
-    normal: {
-      color: "blue",
-      fontSize: 18,
-      marginBottom: 7,
-      fontWeight: "600"
-    },
-    // the style applied when a validation error occours
-    error: {
-      color: "red",
-      fontSize: 18,
-      marginBottom: 7,
-      fontWeight: "600"
-    }
-  },
-  textbox: {
-    // the style applied wihtout errors
-    normal: {
-      color: "white",
-      fontSize: 17,
-      height: 40,
-      //padding: 15,
-      // borderRadius: 4,
-      borderColor: "#cccccc", // <= relevant style here
-      //borderWidth: 1,
-      marginBottom: 8,
-      width: 300,
-      borderBottomWidth: 1,
-      fontWeight: "bold"
-    },
-
-    // the style applied when a validation error occours
-    error: {
-      color: "white",
-      fontSize: 17,
-      height: 40,
-      //padding: 10,
-      // borderRadius: 4,
-      borderColor: "#a94442", // <= relevant style here
-      //borderWidth: 1,
-      marginBottom: 8,
-      width: 300,
-      borderBottomWidth: 1,
-      fontWeight: "bold"
-    }
-  }
-};
-const backgroundColor = "#0067a7";
-const options = {
-  stylesheet: formStyles,
-  order: ["mobile", "name", "otp", "vechile", "password"],
-  fields: {
-    // email: {
-    //   placeholder: 'email@mail.com',
-    //   error: 'email is empty?',
-    //   auto: "none",
-    // },
-    mobile: {
-      placeholder: "Mobile",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false,
-      maxLength: 10
-      //onSubmitEditing: () => this.setFocus("name"),
-      // onSubmitEditing: this.setFocus,
-    },
-
-    name: {
-      placeholder: "Name",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false,
-      error: "Empty"
-      // onSubmitEditing: {this.setFocus("otp")},
-    },
-
-    otp: {
-      placeholder: "OTP",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false,
-      maxLength: 6
-    },
-    vechile: {
-      placeholder: "VECHILE",
-      auto: "none",
-      returnKeyType: "next",
-      autoCorrect: false
-    },
-    password: {
-      placeholder: "Password",
-      auto: "none",
-      returnKeyType: "send",
-      autoCorrect: false
-      //secureTextEntry:true
-    }
-  }
-};
-const value = {
-  name: "user1",
-  mobile: 9350268283,
-  vechile: "up16bd7729",
-  otp: 123456,
-  password: 123456
-};
-// optional rendering options (see documentation)
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
+import MaterialsIcon from 'react-native-vector-icons/MaterialIcons';
+import Hideo  from './Hideo';
+import { backgroundColor } from "./data";
+import {watchPersonData} from "../reducers/person";
+import {connect} from "react-redux";
+import { withNavigation } from 'react-navigation';
 
 class RegisterComponent extends Component {
   constructor(props) {
     super(props);
     //this.imageHeight = new Animated.Value(IMAGE_HEIGHT);
     this.state = {
-      formValue: value,
-      mobile: {},
+      formValue: "",
+      
       token: "",
       uid: null,
-      loading:false
+      loading:false,
+      name: "",
+      mobile: 0,
+      vehicle: "",
+      otp: 0,
+      password: ""
     };
 
     //this.showPass = this.showPass.bind(this);
@@ -215,7 +72,7 @@ class RegisterComponent extends Component {
       fontWeight: "bold"
     }
   };
-  async setToken() {
+  async setToken(cb) {
     if (this.state.token) {
       return;
     }
@@ -226,11 +83,15 @@ class RegisterComponent extends Component {
       Expo.Permissions.NOTIFICATIONS
     );
     if (status !== "granted") {
+      this.onError("Please Enable The Notification on your device");
       return;
     }
     let value = await Expo.Notifications.getExpoPushTokenAsync();
     console.log("Our token Register", value);
     this.setState({ token: value });
+    if(cb){
+      cb();
+    }
     //firebase.database().ref("users").update({token:value });
   }
   showPass() {
@@ -299,12 +160,12 @@ class RegisterComponent extends Component {
       });
     return waitforStatus;
   };
-  async saveUser(user, uid) {
-    let vechile = user.vechile.replace(/[\. ,:-]+/g, "").toUpperCase();
+  async saveUser( uid) {
+    let user = this.state;
+    let vehicle = user.vehicle.replace(/[\. ,:-]+/g, "").toUpperCase();
     console.log("Save user uid::", uid);
-    console.log("Save user vehicle::", vechile);
-    var userDetails = {},
-      jsonVariable = {},
+    console.log("Save user vehicle::", vehicle);
+    var userDetails = {},      
       vechileDetails = {};
     userDetails = {
       name: user.name,
@@ -312,17 +173,17 @@ class RegisterComponent extends Component {
       // vehicle: user.vechile, // +",up125590,up174330",
       token: this.state.token,
       uid: uid,
-      vehicle: vechile
+      vehicle: vehicle
     };
-    vechileDetails[vechile + ""] = {
-      vehicle: vechile,
+    vechileDetails = {
+      vehicle: vehicle,
       name: user.name,
       token: this.state.token,
       uid: uid
     };
 
     let isVehicleAdded = await this.saveInfo(
-      db.collection("vehicle").doc(vechile),
+      db.collection("vehicle").doc(vehicle),
       vechileDetails
     );
     console.log("isVehicleAdded :", isVehicleAdded);
@@ -332,29 +193,71 @@ class RegisterComponent extends Component {
         userDetails
       );
       this.onSuccess(isVehicleAdded.success);
+      this.props.watchPersonData();
+      const { navigate } = this.props.navigation;
+      //console.log("navigation register",this.props.navigation);
+      navigate("Profile");  
     }
     if (isVehicleAdded.error) {
       //fire.auth().deleteUser(uid);
       this.onError(status.error);
     }
   }
-  handleSubmit = async e => {
+  handleSubmit = async e => { 
     let status = {};
-    const value = this._form.getValue();
-    // console.log("value: ", value);
-    if (value) {
+    let isError =false;
+    const {
+      name,
+      mobile,
+      vehicle,
+      otp,
+      password
+    } = this.state;
+    if(!name ){
+      this.setState({name: true});
+      isError = true;
+    }
+    if(!mobile){
+       this.setState({mobile: true});
+       isError = true;
+    }
+    
+    if(!vehicle){
+      this.setState({vehicle: true});
+      isError = true;
+    }
+   if(!otp){
+    this.setState({otp: true});
+    isError = true;
+   }
+   if(!password){
+    this.setState({password: true});
+    isError = true;
+   }
+   if(!this.state.token){
+    this.onError("Please Enable The Notification on your device");
+    return;
+   }
+
+    if (!isError 
+         && name !== true
+         && mobile !== true
+         && vehicle !== true
+         && otp !== true
+         && password !== true 
+        ) {
+    
       this.setState({loading:true});
-      let vechile = value.vechile.replace(/[\. ,:-]+/g, "").toUpperCase();
-      let isVheicleAlreadyAdded = await getReceiverInfo(vechile);
-      if (isVheicleAlreadyAdded.vehicle) {
-        this.onError(`Sorry User ${vechile} is  Registered with us`);
+      let vechileParse = vehicle.replace(/[\. ,:-]+/g, "").toUpperCase();
+      let isVheicleAlreadyAdded = await getReceiverInfo(vechileParse);
+      if (isVheicleAlreadyAdded.name) {
+        this.onError(`Sorry User ${vechileParse} is  Registered with us`);
         return;
       }
-      this.setState({ mobile: value.mobile });
-      status = await this.signup(e, value);
+      status = await this.signup(e, {mobile:mobile,password:password});
       console.log("user created status", status);
       if (status.success) {
-        this.saveUser(value, this.state.uid);
+        this.saveUser(this.state.uid);        
       }
 
       if (status.error) {
@@ -374,71 +277,116 @@ class RegisterComponent extends Component {
   setFocus(name) {
     this._form.getComponent(name).refs.input.focus();
   }
-  componentWillMount() {
-    //this.setToken();
-  }
-
-  componentWillUnmount() {}
-
-  keyboardWillShow = event => {
-    Animated.timing(this.imageHeight, {
-      duration: event.duration,
-      toValue: IMAGE_HEIGHT_SMALL
-    }).start();
-  };
-
-  keyboardWillHide = event => {
-    Animated.timing(this.imageHeight, {
-      duration: event.duration,
-      toValue: IMAGE_HEIGHT
-    }).start();
-  };
-
-  keyboardDidShow = event => {
-    Animated.timing(this.imageHeight, {
-      toValue: IMAGE_HEIGHT_SMALL
-    }).start();
-  };
-
-  keyboardDidHide = event => {
-    Animated.timing(this.imageHeight, {
-      toValue: IMAGE_HEIGHT
-    }).start();
-  };
+  
 
   //<Animated.Image source={logo} style={[styles.logo, { height: this.imageHeight }]} />
   render() {
     return (
-      <KeyboardAwareScrollView
-        style={{ backgroundColor: "#4c69a5" }}
-        resetScrollToCoords={{ x: 0, y: 0 }}
-        contentContainerStyle={{ flex: 1 }}
-        scrollEnabled={true}
-      >
+      
         <View
           style={{
             flex: 1,
-            backgroundColor: "#4c69a5",
-            alignItems: "center"
+            backgroundColor: backgroundColor,
+            //alignItems: "center",
+           // justifyContent:"center"
+            //marginTop:15
           }}
         >
-          <Form
-            ref={c => (this._form = c)}
-            type={User}
-            options={options}
-            value={this.state.formValue}
-            padding={35}
-            onChange={formValue => this.setState({ formValue })}
+        
+       <ScrollView>
+       <View
+          style={{
+            flex: 1,
+            backgroundColor: backgroundColor,
+            alignItems: "center",
+            justifyContent:"center"
+            //marginTop:15
+          }}
+        >
+        <Hideo
+            style = {{width:"94%"}}
+            iconClass={FontAwesomeIcon}
+            //iconClass={MaterialsIcon}
+            //iconName={'directions-bus'} //class not need 
+            iconName={'user-o'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'}           
+            placeholder = "Enter Name"            
+            onChangeText={(text) => this.setState({name: text})}             
+            vehicleInputError =  {this.state.name} 
+            value = {this.state.name}     
           />
+         <Hideo
+            style = {{width:"94%"}}
+            iconClass={FontAwesomeIcon}
+            //iconClass={MaterialsIcon}
+            //iconName={'directions-bus'} //class not need 
+            iconName={'phone'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'}           
+            keyboardType="numeric"
+            placeholder = "Enter Mobile Number"            
+            onChangeText={(text) => this.setState({mobile: text})}             
+            vehicleInputError =  {this.state.mobile} 
+            //value = {Number(this.state.mobile)}     
+          />
+          <Hideo
+            style = {{width:"94%"}}
+            //iconClass={FontAwesomeIcon}
+            iconClass={MaterialsIcon}
+            //iconName={'directions-bus'} //class not need 
+            iconName={'directions-bus'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'} 
+            placeholder = "Vehicle Number"            
+            onChangeText={(text) => this.setState({vehicle: text})}             
+            vehicleInputError =  {this.state.vehicle} 
+            value ={this.state.vehicle}      
+          />
+          <Hideo
+            style = {{width:"94%"}}
+            iconClass={FontAwesomeIcon} 
+            //iconClass={MaterialsIcon}
+            //iconName={'directions-bus'} //class not need 
+            iconName={'envelope-o'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'}           
+            keyboardType="numeric"
+            
+            placeholder = "OTP"            
+            onChangeText={(text) => this.setState({otp: text})}             
+            vehicleInputError =  {this.state.otp} 
+            //value ={Number(this.state.otp)}      
+          /> 
+          <Hideo
+            style = {{width:"94%"}}
+            iconClass={FontAwesomeIcon}
+            //iconClass={MaterialsIcon}
+            //iconName={'directions-bus'} //class not need 
+            iconName={'unlock'}
+            iconColor={'white'}
+            // this is used as backgroundColor of icon container view.
+            iconBackgroundColor={'#f2a59d'}           
+            placeholder = "Enter Password"            
+            onChangeText={(text) => this.setState({password: text})}             
+            vehicleInputError =  {this.state.password} 
+            value = {this.state.password}     
+          />
+          
           <TouchableHighlight
             style={{
-              width: 200,
+              width: 250,
               alignItems: "center",
               justifyContent: "center",
               height: 50,
-              backgroundColor: "#ffae",
+              backgroundColor: "darkviolet",
               marginTop: 20,
-              marginBottom: 40
+              marginBottom: 40,             
+              flex:1
             }}
             onPress={this.handleSubmit}
             // onPress={signInWithGoogleAsync.bind(this)}
@@ -450,36 +398,63 @@ class RegisterComponent extends Component {
            
           </TouchableHighlight>
 
+          <TouchableHighlight
+            style={{
+              width: 250,
+              alignItems: "center",
+              justifyContent: "center",
+              height: 50,
+              backgroundColor: "darkviolet",
+              marginTop: 20,
+              marginBottom: 40,             
+              flex:1
+            }}
+            //onPress={this.setState({isLoginUi:true})}
+            onPress={() => {
+
+              const { navigate } = this.props.navigation;
+              console.log("navigation register",this.props.navigation);
+              navigate("Login");                                             
+          }}
+            // onPress={signInWithGoogleAsync.bind(this)}
+
+            //underlayColor="#99d9f4"
+          >
+         <Text style={{color: 'white', fontSize: 18}}>Login  </Text>
+           
+          </TouchableHighlight>
+          </View>
+          </ScrollView>
+
+          <KeyboardAvoidingView
+            behavior={"padding"}
+            keyboardVerticalOffset={80}
+          />
           <DropdownAlert
             ref={ref => (this.dropdown = ref)}
             onClose={data => this.onClose(data)}
             closeInterval={10000}
           />
         </View>
-      </KeyboardAwareScrollView>
+       
     );
   }
 }
 
-// async function signInWithGoogleAsync() {
-//   try {
-//     const result = await Expo.Google.logInAsync({
-//       androidClientId: "6358744912-9fl3abppce880pumvcmgsc2rq9fn57jk.apps.googleusercontent.com",
-//       iosClientId: "6358744912-9fl3abppce880pumvcmgsc2rq9fn57jk.apps.googleusercontent.com",
-//       scopes: ['profile', 'email'],
-//     });
 
-//     if (result.type === 'success') {
-//       console.log("--------------->" + result.accessToken);
-//       return result.accessToken;
-//     } else {
-//       console.log("--------------cancled->");
-//       return { cancelled: true };
-//     }
-//   } catch (e) {
-//     console.log("---------------Error>" + e);
-//     return { error: true };
-//   }
-// }
 var styles2 = StyleSheet.create({});
-export default RegisterComponent;
+const mapStateToProps = (state) => {
+  console.log("mapStateToProps-register.js.js--",state)
+  return {
+      person: state.person
+  }
+}
+const mapDispatchToProps = (dispatch) => {
+  return { 
+    watchPersonData: () => { dispatch(watchPersonData()) },
+  };
+}
+
+
+export default connect(mapStateToProps,mapDispatchToProps)(withNavigation(RegisterComponent));
+

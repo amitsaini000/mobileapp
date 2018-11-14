@@ -1,5 +1,7 @@
 import { db,firebase } from "../db/config";
 
+export const backgroundColor ="#f2f9ffe6";// "#06A0E3"//"#0067a7";
+export const headerColor = "#334146";
 export const sendMessageTemplate =
  [
   {"name": "Rex", "age": 30},
@@ -16,6 +18,11 @@ export const sendMessageTemplate =
 export const replayMessageTemplate =
  [
   
+  {"name": "Alex", "age": 16},
+  {"name": "Ian", "age": 20},
+  {"name": "Phil", "age": 24},
+  {"name": "Susan", "age": 52},
+  {"name": "Brent", "age": 33},
   {"name": "Alex", "age": 16},
   {"name": "Ian", "age": 20},
   {"name": "Phil", "age": 24},
@@ -135,19 +142,20 @@ export async function UpdateVehicle(uid,message) {
     const vehicleDb = db.collection("vehicle");  
     
     if( message.vehicle1 && message.vehicle1 != message.oldVehicle1){
-        vechileDetails[message.vehicle1.replace(/[\. ,:-]+/g, "") + ""] = {
+        vechileDetails = {
         vehicle: message.vehicle1.replace(/[\. ,:-]+/g, ""),
         name: message.name,
         token: message.token,
         uid: uid
       };
-      var vehicleStatus = await addData(vehicleDb.doc(message.vehicle1.replace(/[\. ,:-]+/g, "")), vechileDetails);
+      var vehicleStatus = await addData(vehicleDb.doc(message.vehicle1.replace(/[\. ,:-]+/g, "")), 
+                                         vechileDetails);
       deleteVehicle(message.oldVehicle1);
    }   
      
    if( message.vehicle2 && message.vehicle2 != message.oldVehicle2){
       vechileDetails ={}
-      vechileDetails[message.vehicle1.replace(/[\. ,:-]+/g, "") + ""] = {
+      vechileDetails= {
       vehicle: message.vehicle2.replace(/[\. ,:-]+/g, ""),
       name: message.name,
       token: message.token,
@@ -162,7 +170,9 @@ export async function UpdateVehicle(uid,message) {
 
 }
 function deleteVehicle(oldVehicle){
-   
+    if(!oldVehicle){
+      return ({success:"Document successfully updated!"});
+    }
     db.collection("vehicle").doc(oldVehicle).delete().then(function() {
         console.log("Document successfully deleted!");
         return ({success:"Document successfully updated!"});   
@@ -184,7 +194,7 @@ export async function addData(doc, data, cb) {
             .set(data)
             .then(function(snapshot) {
               console.log("saveInfo  added successfully ");
-              console.log("prop", this.props);
+              //console.log("prop", this.props);
               if (cb) {
                 //navigate(Home);
               }
@@ -222,14 +232,15 @@ export async function UpdateUserNameVehicle(uid,message) {
    }
    if(message.oldVehicle !== message.vehicle ){
       let  vechileDetails = {}; 
-      let updatedVehicle =  await getReceiverInfo(message.vehicle);
+      let updatedVehicle =  await getReceiverInfo(message.oldVehicle);
+      let isNewVehicleAlreadyExist =  await getReceiverInfo(message.vehicle);
         console.log("vehicleuser details",updatedVehicle);
-        if(updatedVehicle.uid == uid || updatedVehicle.error)
+        if( (updatedVehicle.uid == uid || updatedVehicle.iSvehicle) && isNewVehicleAlreadyExist.iSvehicle)
         {
           console.log("check both uid is same  my uid is "+uid + "; vehicle uid is " +updatedVehicle.uid )
           updatedVehicle.name=message.name
           updatedVehicle.vehicle = message.vehicle;      
-          vechileDetails[message.vehicle.replace(/[\. ,:-]+/g, "") + ""] = {
+          vechileDetails = {
             name:message.name,
             vehicle:message.vehicle,
             uid:uid,
@@ -237,6 +248,7 @@ export async function UpdateUserNameVehicle(uid,message) {
           };
           var batch = db.batch();
           batchUpdate(batch,"vehicle",message.vehicle.replace(/[\. ,:-]+/g, ""),vechileDetails,"set");
+          batchUpdate(batch,"users",uid,{vehicle:message.vehicle},"update");
           batchUpdate(batch,"vehicle",message.oldVehicle,{},"delete");
 
           let waitForStatus = await batch.commit().then(function () {
@@ -279,32 +291,32 @@ export async function UpdateUserNameVehicle(uid,message) {
    return  statusMessage;    
 
 }
-export function updateReceivedMsg(message){
+export function updateReceivedMsg(message,useruid){
   //todo impelent batch update here
-  console.log("updateReceivedMsg",message);
+  //console.log("updateReceivedMsg---->",message);
+  console.log("updateReceivedMsg-uid--->",useruid);
   for(var i=0;i<message.length;i++){
-    if(message[i].cloudReceived != true) {
-      console.log( message[i].cloudReceived)
+    if(message[i].cloudReceived != true &&  message[i].user._id != useruid) {
+      console.log("msg update received-->", message[i].docId)
       db.collection("Notification").doc(message[i].docId).update({received:true,cloudReceived:true}).then(function() {
         console.log("Document successfully updated!");
      }).catch(function(error) {
-       console.log("Error getting documents: ", error);
+      // console.log("Error getting documents: ", error);
      });
-    }
-    
+    }    
   }
 
 }
 
-export function getUserChat(uid, senderuid, cb) {
+export async function getUserChat(uid, senderuid, cb) {
   var msg = [];
   var senderData = {};
 
   //senderuid = "akTzpEREogQRuKm2ovGFEjBeRRY2";
 
   console.log("data uid:::", uid);
-  console.log("data sender:::", senderuid);
-  db.collection("Notification")
+  //console.log("data sender:::", senderuid);
+ await  db.collection("Notification")
     .where(senderuid, "==", true)
     .get()
     .then(function(querySnapshot) {
@@ -316,7 +328,7 @@ export function getUserChat(uid, senderuid, cb) {
           data.avatar_url =  "https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg";
           data.createdAt = new Date(parseInt(doc.data().createdAt));
           data.docId= doc.id;
-          data.received = true;
+          //data.received = true;
           data.cloudReceived = data.cloudReceived || false;
           msg.push(data);
         }
@@ -324,33 +336,36 @@ export function getUserChat(uid, senderuid, cb) {
       
        msg.sort(sortByProperty('createdAt'));
        //console.log(" sort=> ", msg);
-       if(cb){
-        console.log(" getUserChat=> ", cb);
-         cb(msg);
-        }
+      //  if(cb){
+      //   console.log(" getUserChat=> ", cb);
+      //    cb(msg);
+      //   }
     })
     .catch(function(error) {
       console.log("Error getting documents: ", error);
     });
+
+    return msg;
 }
-export function getAllChats(uid, cb) {
+export async function getAllChats(uid, cb) {
   var msg = [];
   var senderData = {};
   console.log("getAllChats:::", uid);
-  db.collection("Notification")
+  msg = await db.collection("Notification")
     .where(uid, "==", true)
     .get()
     .then(function(querySnapshot) {
       querySnapshot.forEach(function(doc) {
         // doc.data() is never undefined for query doc snapshots
         //console.log(new Date(parseInt(data.createdAt))+ " => ", doc.data());
-        //if (doc.data().user._id != uid) 
+       if (doc.data().user._id != uid) 
         {
           var data = {};
           var count = 0;
 
-          console.log(doc.id, " inside if=> ", doc.data().user.name);
+          //console.log(doc.id, " inside if=> ", doc.data().user.name);
             (data.name = doc.data().user.name),
+            (data.senderToken = doc.data().user.senderToken),
             (data.token = doc.data().token),
             (data.senderId = doc.data().user._id),
             (data.avatar_url =
@@ -360,7 +375,7 @@ export function getAllChats(uid, cb) {
             senderData[doc.data().user._id].unreadMsg
               ? senderData[doc.data().user._id].unreadMsg
               : 0;
-          if (doc.data().received == "false") {
+          if (doc.data().received == false) {
             count =
               senderData[doc.data().user._id] &&
               senderData[doc.data().user._id].unreadMsg
@@ -371,15 +386,20 @@ export function getAllChats(uid, cb) {
           senderData[doc.data().user._id].unreadMsg = count;
         }
       });
-      console.log(" unread msg=> ", senderData);
+     // console.log(" unread msg=> ", senderData);
       //msg.push(senderData)
       var dataArray = convertJsonTOArray(senderData);
       dataArray.sort(sortByProperty('unreadMsg'));
-      cb(dataArray.reverse());
+      //cb(dataArray.reverse());
+      return dataArray.reverse()
+      
     })
     .catch(function(error) {
       console.log("Error getting documents: ", error);
+      return [];
     });
+
+    return msg;
 }
 
 function convertJsonTOArray(obj) {
@@ -397,9 +417,9 @@ export async function getReceiverInfo(vehicle) {
     .collection("vehicle")
     .doc( (vehicle))
     .get();
-  console.log("vehicle object::", dataSnapShot.data()[dataSnapShot.id]);
+     console.log("vehicle object::", dataSnapShot.data());
 
-  return dataSnapShot.data()[dataSnapShot.id];
+     return (dataSnapShot.data() || {iSvehicle:false,error:`Sorry User ${vehicle} is Not Register with us`} );
 
   }
   catch(e){
@@ -409,20 +429,24 @@ export async function getReceiverInfo(vehicle) {
   
 }
 
-export async function getUserInfo(uid) {
+export async function getUserInfo(uid,cb) {
   console.log("getUserInfo: ", uid);
-  var dataSnapShot = await db
+  var dataSnapShot =  await db
     .collection("users")
     .doc(uid)
     .get();
+  
+    if(cb){
+    cb(dataSnapShot.data());
+  }  
   return dataSnapShot.data();
 }
 
-export function sendMsg(token, title, body,dataObj) {
+export async function sendMsg(token, title, body,dataObj) {
   console.log(token + "-sendMsg--" + title + "----" + body);
-  dataObj.name = title;
+  dataObj.name = title;  
   console.log("dataObj notification:",dataObj)
-  return fetch("https://exp.host/--/api/v2/push/send", {
+  let status =  await fetch("https://exp.host/--/api/v2/push/send", {
     body: JSON.stringify({
       to: token,
       title: title,
@@ -436,6 +460,8 @@ export function sendMsg(token, title, body,dataObj) {
     },
     method: "POST"
   });
+  //console.log("status send msg",status);
+  return status;
 }
 
 
@@ -449,7 +475,7 @@ export function saveSendMsg(senderObj) {
     createdAt: new Date().getTime(),
     sent: true,
     received: false,
-    user: { _id: senderObj.senderUid, name: senderObj.name }
+    user: { _id: senderObj.senderUid, name: senderObj.name,senderToken:senderObj.tokenSender }
   };
     msg[senderObj.senderUid] = true;
     msg[senderObj.receverId] = true;
@@ -476,6 +502,18 @@ function sortByProperty(property) {
     };
 
 };
+export function isEqual(obj1,obj2){
+ if(JSON.stringify(obj1).length !== JSON.stringify(obj2).length){
+   return false;
+ } 
+  for(let k in obj1){
+     if(obj1[k] != obj2[k]){
+       return false;
+     }
+  }
+  return true;
+
+}
 
 export async function getDbDoc(dbname,docid) {
   var dataSnapShot = await 
@@ -524,12 +562,18 @@ async function updateName(uid,newName){
   batchUpdate(batch,"users",uid,{name:newName},"update");
 
   var NotificationDocids =  await getDocID("Notification",uid);
-  const map1 = NotificationDocids.map(x => db.collection("Notification").doc(x));  
-  const map2 = map1.map(x =>  batch.update(x, { 'user.name': newName }));
+
+  console.log("NotificationDocids ", NotificationDocids)
+  if(NotificationDocids.length >0){
+    const map1 = NotificationDocids.map(x => db.collection("Notification").doc(x));  
+    const map2 = map1.map(x =>  batch.update(x, { 'user.name': newName }));
+
+  }
+  
 
   const userData = await getUserInfo(uid);
    if(userData.vehicle){     
-     batchUpdate(batch,"vehicle",userData.vehicle,{name:newName},"update");
+     batchUpdate(batch,"vehicle",userData.vehicle,{  name:newName},"update");
    }
    if(userData.vehicle1){     
     batchUpdate(batch,"vehicle",userData.vehicle1,{name:newName},"update");    

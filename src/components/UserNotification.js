@@ -14,34 +14,24 @@ import {
   BackHandler,
   DeviceEventEmitter,
   ToolbarAndroid,
-  Image
+  Image,
+  AppState 
   
 } from "react-native";
 import { Icon, Right } from 'native-base'
 import { GiftedChat, InputToolbar } from "react-native-gifted-chat";
-import { getUserChat, saveSendMsg, sendMsg, updateReceivedMsg,handleRightElementPress,replayMessageTemplate } from "./data";
+import { headerColor,backgroundColor,saveSendMsg,getUserChat, 
+        sendMsg, updateReceivedMsg,handleRightElementPress,
+        replayMessageTemplate,getUserInfo } from "./data";
 import NavBar from "./NavBar";
 import CustomView from "./CustomView";
 import { getUserStatus } from "../db/dbutil";
-import HeaderComponent from "./HeaderComponent";
+import TextComponent from "./TextComponent";
 import ModalDropdown from 'react-native-modal-dropdown';
 import { Toolbar } from 'react-native-material-ui';
 import commonStyle from './style';
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  sendButtonContainer: { color: "red" },
-  menu_text: {
-    marginVertical: 10,
-    marginHorizontal: 6,
-    fontSize: 18,
-    //color: 'white',
-    //textAlign: 'center',
-    textAlignVertical: 'center',
-  },
+import {LoginUI} from "./UI";
 
-  
-
-});
 import {
   MenuContext,
   Menu,
@@ -49,18 +39,19 @@ import {
   MenuOption,
   MenuTrigger,Renderers 
 } from 'react-native-popup-menu';
+
+import { connect } from 'react-redux';
+import { withNavigation } from 'react-navigation';
+import {watchConversion,updateChatListner} from "../reducers/userchat";
+
 const filterBotMessages = message =>
   !message.system && message.user && message.user._id && message.user._id === 2;
 const findStep = step => (_, index) => index === step - 1;
-const backgroundColor = "#0067a7";
 
-export default class UserNotification extends Component {
+class UserNotification extends Component {
   constructor(props) {
     super(props);
-    console.log(
-      "UserNotification Conctructor :",
-      this.props.navigation.state.params.senderInfo
-    );
+   // console.log( "UserNotification Conctructor :",this.props.navigation.state.params.senderInfo);
     this.state = {
       messages: [],
       step: 0,
@@ -68,13 +59,16 @@ export default class UserNotification extends Component {
       senderInfo: this.props.navigation.state.params.senderInfo,
       language: "ruby",
       isHidden: true,
-      uid: null,
-      headerTitle:""
-    };
+      headerTitle:"",
 
+      uid:   props.person.uid,
+      title: props.person.name, 
+      token: props.person.token 
+    };
+    this.setUser(props);
+    this.props.updateChatListner(props.person.uid);
     this.onSend = this.onSend.bind(this);
     this.parsePatterns = this.parsePatterns.bind(this);
-    this.setMsg = this.setMsg.bind(this);
     
     this.backPressSubscriptions = new Set()
   }
@@ -117,16 +111,16 @@ export default class UserNotification extends Component {
   
   static navigationOptions =({navigation}) =>  {
     return{
-          headerTitle:navigation.state.params.senderInfo.name,
+          headerTitle:<TextComponent text={navigation.state.params.senderInfo.name}/>,
           headerStyle: {
-            backgroundColor: backgroundColor,
+            backgroundColor: headerColor,
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
             fontWeight: 'bold',
         },
         headerRight:
-        <Toolbar  style={{ container: { backgroundColor: backgroundColor } }}       
+        <Toolbar  style={{ container: { backgroundColor: headerColor } }}       
         rightElement={{
             menu: {
                 icon: "more-vert",
@@ -149,49 +143,103 @@ export default class UserNotification extends Component {
     //             />
     // })
   }
-  setMsg(msg) {
+  setMsg =(msg) => {
     console.log("user chat received",msg);
     try {
       
       if(msg && msg.length >0){
-        console.log("state,",this.state);
-        this.setState({ messages: msg, appIsReady: true });
-        this.setState({headerTitle:msg[0].user.name});
+       // console.log("state,",this.state);
+        this.setState({messages: msg, appIsReady: true,headerTitle:msg[0].user.name });
         updateReceivedMsg(msg);
       }
       
     } catch (error) {
-      console.log("setMsg Error",error)
-      
-    } 
-    
-    
+      console.log("setMsg Error------>",error)
+    }    
   }
-  setUser = user => {
+  setUser = async (props) => {
     console.log("setUser user Notification screen");
 
-    if (user) {
-      this.setState({ uid: user.uid });
-      getUserChat(user.uid, this.state.senderInfo.senderId, this.setMsg);
-      this.props.navigation.setParams({
-        uid: user.uid,
-      })
-      console.log("user chat request sent");
+    if (props.person.name) {
+     // this.setState({ uid: user.uid,title: user.name, token:user.token  });
+       props.watchConversion(props.person.uid, this.state.senderInfo.senderId);
+      // const chat = await getUserChat(user.uid, this.state.senderInfo.senderId);
+      //this.setMsg(chat);
+      this.props.navigation.setParams({uid: props.person.uid});
     }
   };
 
-  componentWillUnmount() {}
-  componentWillMount() {
-    // init with only system messages
-    //await Asset.fromModule(require('../../assets/avatar.png')).downloadAsync();
+  handleNotification = ({ origin, data }) => {  
+    console.log(
+      `Push notification userNotification.js  ${origin} with data: ${JSON.stringify(
+        data.senderInfo
+      )}`
+    );
+    console.log("Push notification usernotification.js", AppState);
+    //const { navigate } = this.props.navigation;
+    const sendData = {
+      senderId:data.senderInfo.senderId,
+      receverId:data.senderInfo.receverId,
+      name:data.senderInfo.name,
+      senderToken:data.senderInfo.tokenSender
+    }
+
+    this.setState({senderInfo: sendData})
+    //getUserChat(this.state.uid, sendData.senderId, this.setMsg);
+    this.props.watchConversion(this.props.person.uid, sendData.senderId);
+    console.log("handleNotification notification UseNotification.js", sendData);
+    //navigate("UserNotification", { senderInfo: sendData });
+  };
+
+  componentWillUnmount() {
+    this.NotificationSubscription && this.NotificationSubscription.remove();
     DeviceEventEmitter.removeAllListeners('hardwareBackPress')
     this.backPressSubscriptions.clear();
-    getUserStatus(this.setUser);
-    //this.setState({ messages: messagesData.filter((message) => message.system), appIsReady: true });
   }
+  
+   /*
+   componentWillMount() {
+    console.log("componentWillMount user Notification Home",this.props.person);
+        if(this.props.person.name)
+        {      
+         this.setUser(this.props.person);
+        }
+        
+   }  */
+
+  static getDerivedStateFromProps(nextProps, state){
+   // console.log("getDerivedStateFromProps--UserNotifi.js-<><><>><>><><>>>><><>");
+     if(nextProps.updatedConversion && nextProps.updatedConversion.length){
+      for(let i= nextProps.updatedConversion.length-1; i>=0 ;i--){
+        for(let j= nextProps.conversion.length-1; j>=0 ;j--){
+          if(nextProps.updatedConversion[i]._id == nextProps.conversion[j]._id){
+          //  console.log("notification.js match data", nextProps.updatedConversion[i]);
+            nextProps.conversion[j].text = nextProps.updatedConversion[i].text;
+            nextProps.conversion[j].received = nextProps.updatedConversion[i].received;
+            //console.log("notification.js match data", nextProps.conversion[j]);
+            break;
+          }
+        }  
+        
+      }
+      return {messages :nextProps.conversion}; 
+    }
+    if(nextProps.conversion && nextProps.conversion.length){
+     // console.log("nextProps getDerivedStateFromProps--UserNotifi.js-<><><>><>><><>>>><><>");
+     // state.messages = nextProps.conversion; 
+      updateReceivedMsg(nextProps.conversion,nextProps.person.uid);      
+      return {messages :nextProps.conversion}; 
+     }
+     return null;
+
+}
+  
+  
+  
+  
   componentDidMount() {
     //
-    //console.log("componentDidMount update receive msg")
+    console.log("componentDidMount usernotification.js")
     // updateReceivedMsg(this.state.messages);
     DeviceEventEmitter.removeAllListeners('hardwareBackPress')
     DeviceEventEmitter.addListener('hardwareBackPress', () => {
@@ -211,8 +259,9 @@ export default class UserNotification extends Component {
          //BackHandler.exitApp();        
       }
     })
-
+       
     this.backPressSubscriptions.add(this.handleHardwareBack)
+    this.NotificationSubscription = Notifications.addListener(this.handleNotification); 
   }
   handleHardwareBack  = () => {
     console.log("handle press",this.props.navigation);
@@ -230,54 +279,42 @@ export default class UserNotification extends Component {
     try {
       const newMessage = []; //this._form.getValue();
       const uid = this.state.uid;
+      const token = this.state.token;
       const vehicleData = this.state.senderInfo;
       const step = this.state.step + 1;
       const msg = {
         senderUid: uid,
         receverId: vehicleData.senderId,
         text: this.state.language,
-        token: vehicleData.token,
-        name: vehicleData.name
+        token: vehicleData.senderToken,
+        name: this.state.title,
+        tokenSender: token
       };
-      // console.log("onsend  old mesg :::::::",this.state.messages);
+      
       newMessage.push(saveSendMsg(msg));
       newMessage[0]["createdAt"] = new Date(
         parseInt(newMessage[0]["createdAt"])
       );
 
-      // sendMsg(vehicleData.token,vehicleData.name,this.state.language);
+      sendMsg(vehicleData.senderToken,this.state.title,this.state.language,{
+        senderId: uid, // to do check again
+        receverId: vehicleData.senderId,
+        tokenSender: token
 
-      //this.state.messages.push(newMessage[0])
-      this.setState(previousState => {
-        // return {step: prevState.step + step};
-        return {
-          messages: GiftedChat.append(
-            [{ ...newMessage[0], sent: true }],
-            this.state.messages
-          )
-        };
       });
-      console.log("onsend  added one mesg :::::::", newMessage);
-      //   this.setState((previousState) => {
-      //     return {
-      //         messages: GiftedChat.append([{ ...newMessage[0], sent: true, received: true }], this.state.messages)
-      //     };
-      // });
-      // this.botSend(step)
+      
+      this.setState(previousState => ({
+        messages: GiftedChat.append(previousState.messages,  [{ ...newMessage[0], sent: true }]),
+      }));
+      
     } catch (e) {
       console.log(e);
     }
-    // this.setState((previousState) => ({
-    //   messages: GiftedChat.append(previousState.messages, [{ ...messages[0], sent: true, received: true }]),
-    //   step,
-    // }));
-    // setTimeout(() => this.botSend(step), 1200 + Math.round(Math.random() * 1000));
+    
   };
 
   botSend(step = 0) {
-    // return;
-    // getUserChat(this.state.uid,this.setMsg);
-    //
+    
     const newMessage = this.state.messages
       .reverse()
       .filter(filterBotMessages)
@@ -308,7 +345,20 @@ export default class UserNotification extends Component {
                
                 style={[
                   commonStyle.dropdown_2,
-                  this.state.isHidden ? { width: "100%" } : { width: "70%" }
+                  {position: 'absolute'},
+                  { flex:0.1},
+                   {left: 2},
+                  //{ right: 0},
+                  {bottom: -50},
+                  
+                  //{backgroundColor:'green'},
+                  {flexDirection:'row'},
+                  {height:50},
+                  {alignItems:'center'},
+                  this.state.isHidden ? { width: "100%" } : { width: "65%" },
+                  {borderWidth : 2},
+                  {borderColor:"grey",}
+                  
                 ]}
                 textStyle={[commonStyle.dropdown_2_text,{color:"black"}]}
                 dropdownStyle={commonStyle.dropdown_2_dropdown}
@@ -325,23 +375,29 @@ export default class UserNotification extends Component {
           style={[
             this.state.isHidden ? { position: "absolute", bottom: -15000 } : {},
             {
-              margin: 2,
-              width: "30%",
-              height: 40,
+              marginTop: -5,
+              width: "32%",
+              height: 50,
               backgroundColor: "darkviolet",
-              padding: 10,
-              alignItems: "center"
+              paddingBottom:10,
+              alignItems: "center",
+              right: 3,            
+              position:"absolute",
+              borderWidth:2,borderColor:"grey"
             }
           ]}
           onPress={this.onSend}
         >
-          <Text style={{ color: "white", fontSize: 18 }}>Reply</Text>
+          <Text style={{ color: "white", fontSize: 18,textAlign:"center",position:"relative",top:10 }}>Reply</Text>
         </TouchableHighlight>
       </View>
     );
   }
   render() {
-    //console.log(this.state.messages);
+    if(!this.props.person.name){
+      return LoginUI(this.props);
+     }
+   // console.log("renser user notification--state----",this.state.messages);
     return (
       <View
         style={{
@@ -359,12 +415,10 @@ export default class UserNotification extends Component {
           testID="main"
         >
           <GiftedChat
-            messages={this.state.messages.reverse()}
-            // onSend={this.onSend}
+            messages={this.state.messages || []}
+            onSend={this.onSend}
             renderCustomView={CustomView}
-            //keyboardShouldPersistTaps="never"
-            user={{ _id: this.state.uid }}
-            //parsePatterns={this.parsePatterns}
+            user={{ _id: this.props.person.uid.toString() }}
             renderInputToolbar={this.renderInputToolbar.bind(this)}
           />
         </View>
@@ -377,3 +431,40 @@ export default class UserNotification extends Component {
     );
   }
 }
+
+
+const mapStateToProps = (state) => {
+  //console.log("mapStateToProps-UserNotification.js--",state)
+  return {
+      person: state.person,
+      conversion:state.userchat.conversion,
+      updatedConversion : state.userchat.updatedConversion
+
+  }
+}
+const mapDispatchToProps = (dispatch) => {
+  return {       
+    watchConversion: (uid,senderId) => { dispatch(watchConversion(uid,senderId)) }, 
+    updateChatListner:(uid,senderId)=>{dispatch(updateChatListner(uid,senderId))} 
+         
+  };
+}
+
+export default connect(mapStateToProps,mapDispatchToProps)(withNavigation(UserNotification));
+
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  sendButtonContainer: { color: "red" },
+  menu_text: {
+    marginVertical: 10,
+    marginHorizontal: 6,
+    fontSize: 18,
+    //color: 'white',
+    //textAlign: 'center',
+    textAlignVertical: 'center',
+  },
+
+  
+
+});
